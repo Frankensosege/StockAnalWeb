@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<style type="text/css">
+.submenu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1;
+  background-color: #fff;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.submenu li {
+  display: block;
+  margin: 0;
+}
+
+.submenu li a {
+  display: block;
+  padding: 10px;
+  color: #333;
+  text-decoration: none;
+}
+
+.submenu li a:hover {
+  background-color: #f5f5f5;
+}
+
+</style>
+<head>
+  <script type="text/javascript">
+$(document).ready(function() {
+  $.ajax({
+    url: '/menu-items/',
+    dataType: 'json',
+    success: function(data) {
+      // Loop through the menu items and create an <li> element for each one
+      $.each(data.menu_items, function(index, item) {
+        var $li = $('<li><a href="' + item.url + '">' + item.name + '</a></li>');
+        // If the menu item has a submenu, create a nested <ul> element for it
+        if (item.submenu.length > 0) {
+          var $submenu = $('<ul class="submenu"></ul>');
+          // Loop through the submenu items and create an <li> element for each one
+          $.each(item.submenu, function(index, subitem) {
+            $submenu.append('<li><a href="' + subitem.url + '">' + subitem.name + '</a></li>');
+          });
+          $li.append($submenu);
+        }
+        $('#menu').append($li);
+      });
+      // Add a click event listener to the menu items that have a submenu
+      $('#menu li:has(".submenu") > a').click(function(e) {
+        e.preventDefault();
+        $(this).siblings('.submenu').toggle();
+      });
+    }
+  });
+});
+
+  </script>
+    <meta charset="UTF-8">
+    <nav>
+      <ul id="menu"></ul>
+    </nav>
+</head>
+<body>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+{% extends 'base_stockMan.html' %}
+
+{% block style %}
+<style type="text/css">
+    .navbar{
+     background-color:#F8F8F8 !important;
+    }
+
+    .nav .active a{
+    background-color:orange !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<ul class="list-category-menu wm"><!-- 금융 wm -->
+    <li id="wm01"><a href="#">펀드</a></li>
+    <li id="wm02"><a href="#">연금저축</a></li>
+    <li id="wm03"><a href="#">ELS/ELB</a></li>
+    <li id="wm04"><a href="#">ISA</a></li>
+    <li id="wm05"><a href="#">Wrap</a></li>
+    <li id="wm06"><a href="#">국내채권</a></li>
+    <li id="wm07"><a href="#">해외채권</a></li>
+    <li id="wm10"><a href="#">신탁</a></li>
+    <li id="wm09"><a href="#">외화RP</a></li>
+    <li id="wm08"><a href="#">AI자산관리</a></li>
+</ul>
+{% endblock %}

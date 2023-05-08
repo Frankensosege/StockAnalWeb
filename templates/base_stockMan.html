@@ -1,0 +1,49 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" type="text/css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    {% block style %}
+    {% endblock %}
+</head>
+<body>
+    <header>
+        <div class="topnav">
+            <div class="center">
+                <div class="menu">
+                    <!-- 네비게이션바 -->
+                    {% include "navbar.html" %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidemenu">
+        <!-- 사이드메뉴 -->
+        {% include "main_menu.html" %}
+    </div>
+<!-- 기본 템플릿 안에 삽입될 내용 Start -->
+    <div class="wrap_content">
+        <div id="content" name="content" class="container">
+        {% block content %}
+        {% endblock %}
+        </div>
+    </div>
+<!-- 기본 템플릿 안에 삽입될 내용 End -->
+    <footer>
+
+    </footer>
+    <div class="container">
+        <!-- footer -->
+        {% include "stock_man_footer.html" %}
+    </div>
+</body>
+</html>
+
+
+
