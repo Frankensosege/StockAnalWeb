@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from Utilities.comUtilities import get_menu_list
 from django.core import serializers
 
@@ -13,9 +13,9 @@ def menu_list(request):
     # menus = Menu.objects.all()
     # menu_json = serializers.serialize('json', menus)
     menu_json = get_menu_list('aa')
-    json_post = serializers.serialize('json', menu_json)
     # return render(request, 'main_menu.html', {'menu_json': menu_json})
-    return JsonResponse(json_post)
+    # return JsonResponse(json_post)
+    return HttpResponse(menu_json, content_type="application/json")
 
 def login(request):
     pass

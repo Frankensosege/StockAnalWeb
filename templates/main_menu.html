@@ -37,24 +37,39 @@ $(document).ready(function() {
     url: "{% url 'comui:menu_list' %}",
     dataType: 'json',
     success: function(data) {
-      alert('aaaaaa');
+      // Loop through the menu items and create an <li> element for each one
+      $.each(data.menu_items, function(index, item) {
+        var $li = $('<li><a href="' + item.url + '">' + item.name + '</a></li>');
+        // If the menu item has a submenu, create a nested <ul> element for it
+        if (item.submenu.length > 0) {
+          var $submenu = $('<ul class="submenu"></ul>');
+          // Loop through the submenu items and create an <li> element for each one
+          $.each(item.submenu, function(index, subitem) {
+            $submenu.append('<li><a href="' + subitem.url + '">' + subitem.name + '</a></li>');
+          });
+          $li.append($submenu);
+        }
+        $('#menu').append($li);
+      });
     },
     error: function(request, status, error) {
       alert("code: " + request.status + "\n" + "message: " + request.responseText + "\n" + "error: " + error);
-    },
-    complete: function(status) {
-      alert('cccccc');
     }
   });
+
+  // Add a click event listener to the menu items that have a submenu
+  $('#menu li:has(".submenu") > a').click(function(e) {
+    e.preventDefault();
+    $(this).siblings('.submenu').toggle();
+  });
+
 });
 
   </script>
-    <meta charset="UTF-8">
+</head>
+<body>
     <nav>
       <ul id="menu"></ul>
     </nav>
-</head>
-<body>
-
 </body>
 </html>
