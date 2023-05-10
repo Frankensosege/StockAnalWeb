@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+from Utilities.comUtilities import get_menu_list
 from django.core import serializers
 
 # Create your views here.
@@ -8,10 +10,12 @@ def index(request):
 
 # views.py
 def menu_list(request):
-    menus = Menu.objects.all()
-    menu_json = serializers.serialize('json', menus)
-    return render(request, 'menu_list.html', {'menu_json': menu_json})
-
+    # menus = Menu.objects.all()
+    # menu_json = serializers.serialize('json', menus)
+    menu_json = get_menu_list('aa')
+    json_post = serializers.serialize('json', menu_json)
+    # return render(request, 'main_menu.html', {'menu_json': menu_json})
+    return JsonResponse(json_post)
 
 def login(request):
     pass

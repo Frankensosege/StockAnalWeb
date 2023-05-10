@@ -1,0 +1,32 @@
+pwd
+ls (-la)
+cd
+mkdir
+mr (-r)
+# mrdir
+touch
+cat
+less/more
+cp
+mv
+# ln -s
+find 
+vi
+alias
+top
+kill/pkill (-9)
+chmod 
+> 
+>>
+|
+head/tail
+grep
+sort
+uniq
+wc
+df -h
+du -b
+
+
+
+

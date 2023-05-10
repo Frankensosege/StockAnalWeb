@@ -1,3 +1,30 @@
+import json
+
+def get_menu_list(userid):
+    menu_list = [
+        {"name": "포트폴리오",
+         "url": "{% url 'investar:portpolio' %}",
+             "submenu": [
+                 {"name": "포트폴리오구성",
+                  "url": "{% url 'investar:create_portpolio' %}"},
+                 {"name": "주가동향",
+                  "url": "{% url 'investar:daily_price' %}"}
+             ],
+         },
+
+        {"name": "분석툴",
+         "url": "{% url 'investar:anal_tool' %}",
+             "submenu": [
+                 {"name": "포트폴리오구성",
+                  "url": "{% url 'investar:create_portpolio' %}"},
+                 {"name": "주가동향",
+                  "url": "{% url 'investar:daily_price' %}"}
+             ]
+         }
+    ]
+
+    return json.dumps(menu_list)
+
 class commonUtilities:
     def __init__(self, propFile):
         self.propFile = propFile
