@@ -12,36 +12,30 @@
     {% endblock %}
 </head>
 <body>
-    <header>
-        <div class="topnav">
-            <div class="center">
-                <div class="menu">
-                    <!-- 네비게이션바 -->
-                    {% include "navbar.html" %}
-                </div>
-            </div>
-        </div>
+    <header class="navbar navbar-expand navbar-dark bg-dark bd-navbar">
+        <!-- 네비게이션바 -->
+        {% include "navbar.html" %}
     </header>
-
-    <div class="sidemenu">
-        <!-- 사이드메뉴 -->
-        {% include "main_menu.html" %}
-    </div>
-<!-- 기본 템플릿 안에 삽입될 내용 Start -->
-    <div class="wrap_content">
-        <div id="content" name="content" class="container">
-        {% block content %}
-        {% endblock %}
+    <div class="cotainer-fluid">
+        <div class="row flex-nowrap">
+            <div class="col-3 bd-sidebar">
+                <!-- 사이드메뉴 -->
+                {% include "main_menu.html" %}
+                <br>
+            </div>
+            <!-- 기본 템플릿 안에 삽입될 내용 Start -->
+            <main class="col-9 py-md-3 pl-md-5 bd-content" role="main">
+                {% block content %}
+                {% endblock %}
+            </main>
         </div>
-    </div>
-<!-- 기본 템플릿 안에 삽입될 내용 End -->
+    </div><!-- 기본 템플릿 안에 삽입될 내용 End -->
     <footer>
-
+        <div class="container">
+            <!-- footer -->
+            {% include "stock_man_footer.html" %}
+        </div>
     </footer>
-    <div class="container">
-        <!-- footer -->
-        {% include "stock_man_footer.html" %}
-    </div>
 </body>
 </html>
 

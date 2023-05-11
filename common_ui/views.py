@@ -12,7 +12,7 @@ def index(request):
 def menu_list(request):
     # menus = Menu.objects.all()
     # menu_json = serializers.serialize('json', menus)
-    menu_json = get_menu_list('aa')
+    menu_json = get_menu_list('B')
     # return render(request, 'main_menu.html', {'menu_json': menu_json})
     # return JsonResponse(json_post)
     return HttpResponse(menu_json, content_type="application/json")
