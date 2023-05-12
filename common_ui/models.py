@@ -13,6 +13,7 @@ class UserManager(BaseUserManager):
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+        user.is_active = True
 
         return user
 
@@ -34,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     passwd = models.CharField(max_length=100)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     alias = models.CharField(max_length=20, null=True)
     profile_img = models.ImageField(upload_to='profile', null=True)
