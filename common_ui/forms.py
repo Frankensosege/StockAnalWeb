@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
 from .models import User
 
+# class UserForm(forms.ModelForm):
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
@@ -15,3 +17,7 @@ class UserForm(forms.ModelForm):
             'user_name': '표시명',
             'passwd': '비밀번호',
         }
+class UsrCreationForm(UserCreationForm):
+    class Meta:
+        model = User
+        fields = ("user_name", "password1", "password2", "email")

@@ -1,38 +1,34 @@
 import json
 
-def get_menu_list(userid):
+def get_menu_list(auth):
     menu_list = {}
 
-    if userid=='A':
+    if auth=='A':
         menu_list = {'menu_items':
             [
                 {"name": "사용자 관리",
                  "url": "",
                  "submenu": []
                  },
-
                 {"name": "분석툴관리",
                  "url": "",
                  "submenu": []
                  },
-
                 {"name": "주가관리",
                  "url": "",
                  "submenu": []
                  },
-
                 {"name": "모델관리",
                  "url": "",
                  "submenu": []
                  },
-
                 {"name": "재무제표",
                  "url": "",
                  "submenu": []
                  }
             ]
         }
-    else:
+    elif auth == 'U':
         menu_list = {'menu_items':
             [
                 {"name": "포트폴리오",
@@ -56,6 +52,8 @@ def get_menu_list(userid):
                  }
             ]
         }
+    else:
+        menu_list = {}
 
     return json.dumps(menu_list)
 
