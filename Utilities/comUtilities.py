@@ -56,7 +56,7 @@ def get_menu_list(userid):
                  }
             ]
         }
-    print(menu_list)
+
     return json.dumps(menu_list)
 
 class commonUtilities:
