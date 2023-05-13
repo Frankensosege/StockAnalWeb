@@ -29,12 +29,14 @@ class anlDataMng:
 
     def __getLastPageNaver(self, url):
         #네이버 금융에서 종목별 과거 주가가져오기
+
         lp_html = requests.get(url, headers={'User-agent':'Mozilla/5.0'}).text
         bs = BeautifulSoup(lp_html, 'lxml')
         pgrr = bs.find('td', class_=self.cu.get_property('ETC', 'naverLpageClass'))
         if pgrr == None:
             return None
         s = str(pgrr.a['href']).split('=')
+        # print('-----------------------------------')
         # print(s, s[-1])
 
         return s[-1]
@@ -50,9 +52,15 @@ class anlDataMng:
             if lastpg == None:
                 return None
             df = pd.DataFrame()
-            pages = min(int(lastpg), pages_to_fetch)
+            if pages_to_fetch == 0:
+                pages = int(lastpg)
+            else:
+                pages = min(int(lastpg), int(pages_to_fetch))
+
             for page in range(1, pages + 1):
                 prcUrl = '{}&page={}'.format(url, page)
+                # print(prcUrl , '     ', pages)
+                # break
                 html = requests.get(prcUrl, headers={'User-agent': 'Mozilla/5.0'}).text
 
                 df = df.append(pd.read_html(html, header=0)[0])
