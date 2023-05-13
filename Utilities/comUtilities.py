@@ -66,7 +66,7 @@ class commonUtilities:
         import configparser as parser
 
         properties = parser.ConfigParser()
-        properties.read(self.propFile)
+        properties.read(self.propFile, "utf-8")
         propertiesSection = properties[propSection]
 
         return propertiesSection[propName]

@@ -109,6 +109,8 @@ class DBUpdater:
                     #       f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
                     #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
                     cur.execute(sql)
+                    if not r.Index % 100:
+                        self.conn.commit()
                 print(sql)
                 self.conn.commit()
                 self.logger.info('replace_price_naver : End update daily price #{:04d} {}:{}'.format(num+1, code, company))
@@ -141,6 +143,17 @@ class DBUpdater:
             return None
 
         return rs[0]
+
+    ## 초기 company 별 주가자료를 모두 가져 오도록 한다.
+    def update_all_price_company(self, code):
+        sd = anlDataMng()
+        com_name = self.get_company_name(self, code)
+        df = sd.getDailyPriceNaver(code, com_name, 0)
+        if df is None:
+            return None
+
+        self.replace_price_naver(df, 0, code, com_name)
+        return df.length()
 
     def execute_daily(self):
         """실행 즉시 및 매일 오후 5시에 daily_price 테이블 update"""
