@@ -1,11 +1,12 @@
 from WebCrawler.StockData import anlDataMng
 import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
-import json, calendar
+import calendar
 from datetime import datetime
 from threading import Timer
 from Utilities.DBManager import DBman
 from Investar.StockMarketDB import MarketDB
+from Utilities.comUtilities import commonUtilities
 
 class DBUpdater:
     codes = {}
@@ -14,6 +15,7 @@ class DBUpdater:
         self.dbm = DBman()
         self.conn = self.dbm.get_connection()
         self.logger = sl(__name__).get_logger()
+        self.cu = commonUtilities('./config.ini')
 
     def __del__(self):
         """소멸자 : DB 연결 해제"""
@@ -142,18 +144,10 @@ class DBUpdater:
 
     def execute_daily(self):
         """실행 즉시 및 매일 오후 5시에 daily_price 테이블 update"""
+        # pages_to_fetch 가져올 일별 price(0 전체)
+        pages_to_fetch = self.cu.get_property('DPrice', 'pages_to_fetch')
         self.logger.info('execute_daily : start-----')
         self.update_comp_info()
-        try:
-            with open('config.jason', 'r') as in_file:
-                config = json.load(in_file)
-                pages_to_fetch = config['pages_to_fetch']
-        except FileNotFoundError:
-            with open('config.jason', 'w') as out_file:
-                pages_to_fetch = 100
-                config = {'pages_to_fetch': 1}
-                json.dump(config, out_file)
-
         self.update_daily_price(pages_to_fetch)
 
         tmnow = datetime.now()
@@ -161,7 +155,7 @@ class DBUpdater:
         if tmnow.month == 12 and tmnow.day == lastday:
             tmnext = tmnow.replace(year=tmnow.year+1, month=1, day=1, hour=17, minute=0, second=0)
         elif tmnow.day == lastday:
-            tmnext = tmnow.replace( month=tmnow.month+1, day=1, hour=17, minute=0, second=0)
+            tmnext = tmnow.replace(month=tmnow.month+1, day=1, hour=17, minute=0, second=0)
         else:
             tmnext = tmnow.replace(day=tmnow.day+1, hour=17, minute=0, second=0)
         tmdiff = tmnext - tmnow
