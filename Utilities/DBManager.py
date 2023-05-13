@@ -1,4 +1,5 @@
-import psycopg2
+# import psycopg2 dbl
+import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text
 
@@ -15,12 +16,14 @@ class DBman:
 
     def get_connection(self):
         try:
-            self.conn = psycopg2.connect(
+            self.conn = dbl.connect(
                                          host=self.host,
-                                         dbname=self.dbname,
+                                         # dbname=self.dbname,  --> postgreSQL
+                                         db=self.dbname, # MySQL
                                          user=self.user,
                                          password=self.password,
-                                         port=self.port
+                                         # port=self.port   --> postgreSQL
+                                         port=int(self.port) # MySQL
                                          )
         except Exception as e:
             self.logger.error('get_connection', e)
@@ -30,7 +33,8 @@ class DBman:
     def get_alchmy_con(self, mode):
 
         engine = create_engine(
-            'postgresql+psycopg2://{}:{}@{}:{}/{}'.format(self.user, self.password, self.host, self.port, self.dbname),
+            # 'postgresql+psycopg2://{}:{}@{}:{}/{}'.format(self.user, self.password, self.host, self.port, self.dbname),  --> postgreSQL
+            'mysql+mysqldb://{}:{}@{}:{}/{}'.format(self.user, self.password, self.host, self.port, self.dbname), # MySQL
             isolation_level=mode
         )
         return engine

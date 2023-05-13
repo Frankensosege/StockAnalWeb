@@ -48,15 +48,26 @@ class DBUpdater:
                     for idx in range(len(krx)):
                         code = krx.code.values[idx]
                         company = krx.company.values[idx]
-                        sql = f"WITH upsert AS "\
-                              f"(UPDATE company_info "\
-                              f" SET company = '{company}', "\
-                              f"     last_update = '{today}' "\
-                              f" WHERE code = '{code}' "\
-                              f" RETURNING * ) "\
-                              f"INSERT INTO company_info (code, company, last_update) "\
-                              f"SELECT '{code}', '{company}', '{today}' " \
-                              f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+
+                        # MySQL용 Merge
+                        sql = f"INSERT INTO company_info (code, company, last_update) " \
+                              f"VALUES ('{code}', '{company}', '{today}') " \
+                              f"ON DUPLICATE KEY " \
+                              f"UPDATE company = '{company}', last_update = '{today}'; "
+
+
+                        # postgreSQL 용 Merge 문
+                        # sql = f"WITH upsert AS "\
+                        #       f"(UPDATE company_info "\
+                        #       f" SET company = '{company}', "\
+                        #       f"     last_update = '{today}' "\
+                        #       f" WHERE code = '{code}' "\
+                        #       f" RETURNING * ) "\
+                        #       f"INSERT INTO company_info (code, company, last_update) "\
+                        #       f"SELECT '{code}', '{company}', '{today}' " \
+                        #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+
+
                         self.logger.info(f'update_comp_info : {sql}')
                         cur.execute(sql)
                         self.codes[code] = company
@@ -74,20 +85,27 @@ class DBUpdater:
             with self.conn.cursor() as cur:
                 for r in df.itertuples():
                     self.logger.info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, r.date))
-                    sql = f"WITH upsert AS "\
-                          f"(UPDATE daily_price "\
-                          f" SET open = {r.open}, "\
-                          f"     high = {r.high}, "\
-                          f"     low = {r.low}, "\
-                          f"     close = {r.close}, "\
-                          f"     diff = {r.diff}, "\
-                          f"     volume = {r.volume} "\
-                          f" WHERE code = '{code}' "\
-                          f" AND   date = '{r.date}' "\
-                          f" RETURNING * ) "\
-                          f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) "\
-                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
-                          f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+                    # MySQL용 Merge
+                    sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
+                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
+                          f"ON DUPLICATE KEY " \
+                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
+
+                    # postgreSQL 용 Merge 문
+                    # sql = f"WITH upsert AS "\
+                    #       f"(UPDATE daily_price "\
+                    #       f" SET open = {r.open}, "\
+                    #       f"     high = {r.high}, "\
+                    #       f"     low = {r.low}, "\
+                    #       f"     close = {r.close}, "\
+                    #       f"     diff = {r.diff}, "\
+                    #       f"     volume = {r.volume} "\
+                    #       f" WHERE code = '{code}' "\
+                    #       f" AND   date = '{r.date}' "\
+                    #       f" RETURNING * ) "\
+                    #       f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) "\
+                    #       f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
+                    #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
                     cur.execute(sql)
                 print(sql)
                 self.conn.commit()
@@ -149,9 +167,9 @@ class DBUpdater:
         tmdiff = tmnext - tmnow
         secs = tmdiff.seconds
 
-        t = Timer(secs, self.execute_daily)
-        self.logger.info('execute_daily : Waiting for next update ({})'.format(tmnext.strftime('%y-%m-%d %H:%M')))
-        t.start()
+        # t = Timer(secs, self.execute_daily)   # 메일 스케쥴링
+        # self.logger.info('execute_daily : Waiting for next update ({})'.format(tmnext.strftime('%y-%m-%d %H:%M')))
+        # t.start()
 
 
 #if __name__ == '__main__':

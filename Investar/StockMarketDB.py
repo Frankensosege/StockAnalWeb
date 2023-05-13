@@ -53,10 +53,10 @@ class MarketDB:
                 sql = self.dbm.get_alchemy_query(sql)
                 df = pd.read_sql(sql, al_conn)
         except AnalException as e:
-            self.logger.info('get_comp_info : ' + str(e))
+            self.logger.info('get_daily_price : ' + str(e))
             return None
         except Exception as e:
-            self.logger.info('get_comp_info : ' + str(e))
+            self.logger.info('get_daily_price : ' + str(e))
             return None
 
         return df

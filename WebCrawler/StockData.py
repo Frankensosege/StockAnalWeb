@@ -22,7 +22,7 @@ class anlDataMng:
             df = df.rename(columns={'종목코드':'code', '회사명':'company'})
             df.code = df.code.map('{:06d}'.format)
         except Exception as e:
-            self.logger.error("getItemList : " + e)
+            self.logger.error("getItemList : " + str(e))
             return None
 
         return df
