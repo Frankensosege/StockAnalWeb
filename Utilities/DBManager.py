@@ -2,17 +2,19 @@
 import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text
+import config.settings as conf
 
 class DBman:
     def __init__(self):
         from Utilities.UsrLogger import stockLogger as sl
+        dbconf = conf.DATABASES['default']
         self.logger = sl(__name__).get_logger()
         self.prop = cu('./config.ini')
-        self.host = self.prop.get_property('DB', 'hostname')
-        self.dbname = self.prop.get_property('DB', 'dbname')
-        self.user = self.prop.get_property('DB', 'username')
-        self.password = self.prop.get_property('DB', 'password')
-        self.port = self.prop.get_property('DB', 'port')
+        self.host = dbconf['HOST']   # self.prop.get_property('DB', 'hostname')
+        self.dbname = dbconf['NAME']   # self.prop.get_property('DB', 'dbname')
+        self.user = dbconf['USER']   # self.prop.get_property('DB', 'username')
+        self.password = dbconf['PASSWORD']   # self.prop.get_property('DB', 'password')
+        self.port = dbconf['PORT']   # self.prop.get_property('DB', 'port')
 
     def get_connection(self):
         try:
