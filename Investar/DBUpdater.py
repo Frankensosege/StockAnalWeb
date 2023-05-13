@@ -158,9 +158,9 @@ class DBUpdater:
             tmnext = tmnow.replace(month=tmnow.month+1, day=1, hour=17, minute=0, second=0)
         else:
             tmnext = tmnow.replace(day=tmnow.day+1, hour=17, minute=0, second=0)
-        tmdiff = tmnext - tmnow
-        secs = tmdiff.seconds
-
+        # tmdiff = tmnext - tmnow
+        # secs = tmdiff.seconds
+        #
         # t = Timer(secs, self.execute_daily)   # 메일 스케쥴링
         # self.logger.info('execute_daily : Waiting for next update ({})'.format(tmnext.strftime('%y-%m-%d %H:%M')))
         # t.start()
