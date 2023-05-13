@@ -1,16 +1,27 @@
 import logging
 from Utilities.comUtilities import commonUtilities as cu
 import logging.handlers
+import os
 
 class stockLogger():
     def __init__(self, module_name):
         self.modul_name = module_name
         conf = cu("./config.ini")
         logLevel = conf.get_property("LOG", "loglevel")
+        logpath = conf.get_property("LOG", "fileLoc")
+        logfile = conf.get_property("LOG", "LogName")
+
         self.logger = logging.getLogger(self.modul_name + ' : ')
         self.logger.setLevel(self.__get_level(logLevel))
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s")
-        timedfilehandler = logging.handlers.TimedRotatingFileHandler(filename='./log/logfile', when='midnight', interval=1,
+
+        try:
+            if not os.path.exists(logpath):
+                os.makedirs(logpath)
+        except Exception as e:
+            print(e)
+
+        timedfilehandler = logging.handlers.TimedRotatingFileHandler(filename=logpath + logfile, when='midnight', interval=1,
                                                                      encoding='utf-8')
         timedfilehandler.setFormatter(formatter)
         timedfilehandler.suffix = "%Y%m%d"
