@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'Investar',
     'common_ui',
     'django.contrib.admin',
     'django.contrib.auth',

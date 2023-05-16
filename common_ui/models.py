@@ -29,7 +29,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """UserManager 를 objects 필드에 사용"""
-
+    id = models.BigIntegerField(unique=True)
     email = models.EmailField(max_length=255, unique=True)
     user_name = models.CharField(max_length=255)
     passwd = models.CharField(max_length=100)
