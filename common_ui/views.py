@@ -29,6 +29,7 @@ def login(request):
         if user is not None:
             # redirect the user to the home page
             request.session['email'] = user.email
+            request.session['id'] = user.id
             if user.is_superuser or user.is_staff:
                 request.session['auth'] = 'A'
             else:
