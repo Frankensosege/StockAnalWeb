@@ -119,8 +119,6 @@ class DBUpdater:
             self.conn.rollback()
             self.logger.info('replace_price_naver :' + str(e))
 
-
-
     def update_daily_price(self, pages_to_fetch):
         """네이버 금융에서 주식시세를 읽어 DB에 update"""
 
