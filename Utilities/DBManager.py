@@ -3,6 +3,7 @@ import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text
 import config.settings as conf
+import pandas as pd
 
 class DBman:
     def __init__(self):
@@ -53,3 +54,15 @@ class DBman:
             return None
 
         return 0
+
+    def excute_alconn(self, exec_name, sql, alcon_parm='REPEATABLE READ'):
+        try:
+            al_conn = self.get_alchmy_con(alcon_parm)
+            sql = self.get_alchemy_query(sql)
+            with al_conn.begin() as al_conn:
+                df = pd.read_sql(sql, al_conn)
+        except Exception as e:
+            self.logger.info(exec_name + ': ' + str(e))
+            return None
+
+        return df

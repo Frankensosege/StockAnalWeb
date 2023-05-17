@@ -8,7 +8,6 @@ $(document).ready(function() {
     success: function(data) {
       // Loop through the menu items and create an <li> element for each one
       $.each(data.menu_items, function(index, item) {
-        //var $li = $('<li><a href="' + item.url + '" class="nav-link test-white p-3 mb-2 sidebar-link">' + item.name + '</a></li>');
         // If the menu item has a submenu, create a nested <ul> element for it
 
         if (item.submenu.length > 0) {
@@ -16,7 +15,7 @@ $(document).ready(function() {
           var $submenu = $('<ul class="submenu"></ul>');
           // Loop through the submenu items and create an <li> element for each one
           $.each(item.submenu, function(index, subitem) {
-             $submenu.append('<li class="nav-item"><a href="' + subitem.url + ' class="nav-link test-white p-3 mb-2 sidebar-link">' + subitem.name + '</a></li>');
+             $submenu.append('<li class="nav-item"><a href="' + subitem.url + '" class="nav-link test-white p-3 mb-2 sidebar-link">' + subitem.name + '</a></li>');
           });
           $li.append($submenu);
         } else {

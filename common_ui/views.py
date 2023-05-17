@@ -1,8 +1,9 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse
 from Utilities.comUtilities import get_menu_list
-from .forms import UserForm, UsrCreationForm
+from .forms import UserForm, UserCreationForm
+from .models import User
 
 # Create your views here.
 def index(request):
@@ -23,7 +24,7 @@ def login(request):
         passwd = request.POST.get('passwd')
 
         # query the database for the user with the given username and password
-        # user = User.objects.get(email=email, passwd=passwd)
+        # user = User.objects.get(email=email, password=passwd)
         user = authenticate(email=email, password=passwd)
 
         if user is not None:
@@ -45,8 +46,8 @@ def login(request):
             # return HttpResponseRedirect(redirect_to)
         else:
             # display an error message
-            error = 'Invalid credentials. Please try again.'
-
+            error = 'Invalid user. Please try again.'
+            return JsonResponse({'error': error})
     else:
         form = UserForm()
 
@@ -62,7 +63,7 @@ def logout(request):
 
 def signup(request):
     if request.method == "POST":
-        form = UsrCreationForm(request.POST)
+        form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
             email = form.cleaned_data.get('email')

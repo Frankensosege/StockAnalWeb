@@ -1,0 +1,164 @@
+{% extends "base_stockMan.html" %}
+
+{% block style %}
+  <style>
+    .container {
+      display: flex;
+    }
+    .list {
+      width: 220px;
+      margin-right: 50px;
+    }
+    .list-item {
+      cursor: pointer;
+    }
+    .page-link {
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .active-page {
+      font-weight: bold;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container show-grid">
+    <div class="col-md-6">
+      <div class="row">
+
+        <ul class="list" id="leftList">
+        </ul>
+
+        <nav aria-label="...">
+          <ul id="pages" class="pagination pagination-sm">
+
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <ul class="list" id="rightList">
+      </ul>
+    </div>
+  </div>
+
+
+  <script>
+    $(document).ready(function() {
+      var itemsPerPage = 20;
+      var currentPage = 1;
+
+      // Retrieve the total number of items from the database
+      $.ajax({
+        url: "{% url 'investar:total_item_count' %}", // Replace with the path to your server-side script
+        type: 'GET',
+        success: function(totalItems) {
+          // Display the pages links
+          var totalPages = Math.ceil(totalItems.totalItems / itemsPerPage);
+<!--          var pagesDiv = $('#pages');-->
+              set_page_link(1, tot_page)
+
+<!--          for (var i = 1; i <= totalPages; i++) {-->
+<!--            var pageLink = $('<span>').addClass('page-link').text(i);-->
+<!--            var pageLink = $('<a href="#">').addClass('page-link').text(i);-->
+<!--            if (i === 1) {-->
+<!--              pageLink.addClass('active-page');-->
+<!--            }-->
+<!--            pageLink.click(function() {-->
+<!--              goToPage(this);-->
+<!--            });-->
+<!--            pagesDiv.append(pageLink);-->
+<!--          }-->
+
+          // Display the first page of items in the left list
+          displayPage(currentPage);
+        }
+      });
+    });
+
+    function set_page_link(curr_page, tot_page) {
+      var pagesDiv = $('#pages');
+      pagesDiv.empty();
+
+      if (curr_page === 1) {
+        start_p = 1;
+        end_p = 3;
+      } else {
+        if (curr_page + 1 > tot_page) {
+          start_p = tot_page - 2
+          end_p = tot_page;
+        } else {
+          start_p = curr_page - 1
+          end_p = curr_page + 1;
+        }
+      }
+
+      pagesDiv.append('<a href="#">' + '맨앞' + </a>);
+      var pageLink = $('<a href="#">').addClass('page-link').text(i);
+      for (var i = start_p;i <= end_p; i++)
+      {
+        var pageLink = $('<a href="#">').addClass('page-link').text(i);
+        if (i === curr_page) {
+          pageLink.addClass('active-page');
+        }
+        pageLink.click(function() {
+          goToPage(this);
+        });
+        pagesDiv.append(pageLink);
+      }
+      pagesDiv.append('<a href="#">' + '맨뒤' + </a>);
+    }
+
+    function goToPage(link) {
+      var pageNumber = $(link).text()
+      if (pageNumber=='맨앞') {
+        pg_no = 0
+      } else if (pageNumber=='맨뒤') {
+        pg_no = 999
+      } else {
+        pg_no = parseInt($(link).text());
+      }
+      displayPage(pg_no);
+    }
+
+    function displayPage(pageNumber) {
+      var leftList = $('#leftList');
+      var rightList = $('#rightList');
+
+      // Clear the left and right lists
+      leftList.empty();
+      rightList.empty();
+
+      // Retrieve the items for the specified page from the database
+      $.ajax({
+        url: "{% url 'investar:get_paged_item' %}", // Replace with the path to your server-side script
+        type: 'GET',
+        data: { limit: 20, offset: (pageNumber - 1) * 20 }, // Specify the limit and offset for retrieving items
+        success: function(data) {
+          // Display the items in the left list
+          data.forEach(function(item) {
+            var listItem = $('<li>').addClass('list-item').text(item.company + '( ' + item.code + ' )');
+            listItem.click(function() {
+              selectItem(this);
+            });
+            leftList.append(listItem);
+          });
+
+          // Update the active page link
+          $('.active-page').removeClass('active-page');
+          $('.page-link').eq(pageNumber - 1).addClass('active-page');
+        }
+      });
+    }
+
+    function selectItem(item) {
+      var text = $(item).text();
+      var rightList = $('#rightList');
+      var newListItem = $('<li>').text(text);
+      rightList.append(newListItem);
+    }
+  </script>
+{% endblock %}
+
+
