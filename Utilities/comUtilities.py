@@ -35,9 +35,9 @@ def get_menu_list(auth):
                  "url": "",
                  "submenu": [
                      {"name": "포트폴리오구성",
-                      "url": "{% url 'investar:create_portpolio' %}"},
+                      "url": "/investar/create_portpolio/"},
                      {"name": "주가동향",
-                      "url": "{% url 'investar:daily_price' %}"}
+                      "url": "/investar/daily_price/"}
                  ],
                  },
 
@@ -45,9 +45,9 @@ def get_menu_list(auth):
                  "url": "",
                  "submenu": [
                      {"name": "분석툴 선택",
-                      "url": "{% url 'investar:create_portpolio' %}"},
+                      "url": "/investar/create_portpolio/"},
                      {"name": "분석조회",
-                      "url": "{% url 'investar:daily_price' %}"}
+                      "url": "/investar/daily_price/"}
                  ]
                  }
             ]

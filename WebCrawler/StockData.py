@@ -4,6 +4,7 @@ import requests
 from Utilities.comUtilities import commonUtilities
 import mplfinance as mpf
 from Utilities.UsrLogger import stockLogger as sl
+import dart_fss as dart
 
 class anlDataMng:
     def __init__(self):
@@ -93,3 +94,42 @@ class anlDataMng:
         mc = mpf.make_marketcolors(up='r', down='b', inherit=True)
         s = mpf.make_mpf_style(marketcolors=mc)
         mpf.plot(df, **kwargs, style=s)
+
+    def get_dart_fss(self, item_code, bgn_de, report_tp=['quarter']):
+        # Open DART API KEY 설정
+        api_key = self.cu.get_property('DART', 'api_key')
+        dart.set_api_key(api_key=api_key)
+
+        # DART 에 공시된 회사 리스트 불러오기
+        corp_list = dart.get_corp_list()
+
+        dart_comp = corp_list.find_by_stock_code(item_code)
+        fs = dart_comp.extract_fs(bgn_de=bgn_de, report_tp=['quarter'])
+
+        report = ['bs', 'is', 'cis', 'cf']  ## 4개의 보고서
+        data_dict = {}  ## 데이터 프레임 만들기전에 dict형태로 저장
+
+        for i in report:
+            report_ = i
+            df = fs.show(report_, show_class=False, show_concept=False)  ## 각각의 제무재표를 가져옴
+
+            if df is None:  ## df가없으면 다음으로 넘어간다
+                continue
+            else:
+                new_index = df.columns.get_level_values(0)[2::].to_list()  ## 멀티 인덱스 문제 해결을 위해 멀티인덱스중 필요한 부분 가져옴
+                df.columns = range(df.shape[1])  ##멀티 인덱스 삭제 및 해결부분
+                df.index.names = [None] * len(df.index.names)  # 멀티 인덱스 삭제 및 해결부분
+                columns = ['ko', 'en'] + new_index  ## 한글명, 영어명 +인덱스 추출부분으로 데이터프레임 재생산
+                df.columns = columns
+                data_dict['data_' + i] = df.T  ## 전치해서 딕셔너리에 저장
+
+        return data_dict
+
+        # try:
+        #     data_bs = data_dict['data_bs']
+        #     data_is = data_dict['data_is']
+        #     data_cis = data_dict['data_cis']
+        #     data_cf = data_dict['data_cf']
+        # except KeyError as e:  ## 오류가 나는 부분은 어디인지 전송
+        #     print("Error:", e, "is missing in data_dict.")
+
