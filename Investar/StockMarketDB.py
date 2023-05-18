@@ -17,9 +17,9 @@ class MarketDB:
     def get_comp_info(self, item_code=None, start=0, ret_items=0):
         if item_code is None:
             if ret_items == 0:
-                sql = "SELECT * FROM company_info"
+                sql = "SELECT * FROM company_info ORDER BY company "
             else:
-                sql = f"SELECT * FROM company_info LIMIT {start}, {ret_items}"
+                sql = f"SELECT * FROM company_info ORDER BY company LIMIT {start}, {ret_items}"
         else:
             sql = f"SELECT * FROM company_info WHERE code = '{item_code}'"
 
@@ -29,9 +29,9 @@ class MarketDB:
 
     def get_invest_items(self, user_id=None):
         if not user_id is None:
-            sql = f"SELECT code, company FROM invest_item WHERE id = '{user_id}'"
+            sql = f"SELECT code, company FROM invest_items WHERE user_id = '{user_id}'"
         else:
-            sql = "SELECT DISTINCT code, company FROM invest_item"
+            sql = "SELECT DISTINCT code, company FROM invest_items"
 
         df = self.dbm.excute_alconn('get_invest_items', sql)
 
@@ -73,3 +73,18 @@ class MarketDB:
             return None
 
         return df
+
+    def create_invitem_list(self, user_id, items):
+        sql = f'DELETE FROM invest_items WHERE user_id = "{user_id}"'
+        ret = self.dbm.excute_alcon_CUD('create_invitem_list(delete)', sql)
+
+        if ret is not None:
+            for item in items:
+                code, company = item.split()
+                sql = f'INSERT INTO invest_items (user_id, code, company) VALUES ("{user_id}", "{code}", "{company}")'
+                ret = self.dbm.excute_alcon_CUD('create_invitem_list(insert)', sql)
+                if ret is None:
+                    return "투자종목 저장에 실패 했습니다."
+        else:
+            return "투자종목 삭제에 실패 했습니다."
+        return None

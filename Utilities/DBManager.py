@@ -1,7 +1,7 @@
 # import psycopg2 dbl
 import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, engine
 import config.settings as conf
 import pandas as pd
 
@@ -66,3 +66,15 @@ class DBman:
             return None
 
         return df
+
+    def excute_alcon_CUD(self, exec_name, sql):
+        try:
+            al_conn = self.get_alchmy_con("AUTOCOMMIT")
+            sql = self.get_alchemy_query(sql)
+            with al_conn.begin() as al_conn:
+                result = al_conn.execute(sql)
+        except Exception as e:
+            self.logger.info(exec_name + ': ' + str(e))
+            return None
+
+        return result
