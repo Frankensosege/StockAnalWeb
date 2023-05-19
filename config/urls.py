@@ -21,6 +21,7 @@ import common_ui.views as views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('comui/', include('common_ui.urls')),
+    path('stkadmin/', include('MlStockAdmin.urls')),
     path('investar/', include('Investar.urls')),
     path('', views.index, name='index'),  # '/' 에 해당되는 path
 ]

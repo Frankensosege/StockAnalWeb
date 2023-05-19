@@ -45,10 +45,12 @@ class DBman:
     def get_alchemy_query(self, query):
         return text(query)
 
-    def excuteSQL(self, sqlStr):
+    def excuteSQL(self, sqlStr, iscommit=False):
         try:
             cur = self.conn.cursor()
             cur.execute(sqlStr)
+            if iscommit:
+                cur.commit()
         except Exception as e:
             self.logger.error('excuteSQL', e)
             return None

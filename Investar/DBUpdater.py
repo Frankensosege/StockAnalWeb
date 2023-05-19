@@ -1,9 +1,7 @@
 from WebCrawler.StockData import anlDataMng
 import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
-import calendar
 from datetime import datetime
-from threading import Timer
 from Utilities.DBManager import DBman
 from Investar.StockMarketDB import MarketDB
 from Utilities.comUtilities import commonUtilities
@@ -111,7 +109,6 @@ class DBUpdater:
                     cur.execute(sql)
                     if not r.Index % 100:
                         self.conn.commit()
-                print(sql)
                 self.conn.commit()
                 self.logger.info('replace_price_naver : End update daily price #{:04d} {}:{}'.format(num+1, code, company))
 
@@ -124,7 +121,7 @@ class DBUpdater:
 
         sd = anlDataMng()
         for idx, code in enumerate(self.codes):
-            df = sd.getDailyPriceNaver(code, self.codes[code], pages_to_fetch)
+            df = sd.getDailyPriceNaver(code, self.codes[code], pages_to_fetch=pages_to_fetch)
             if df is None:
                 continue
 

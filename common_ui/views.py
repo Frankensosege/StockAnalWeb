@@ -1,9 +1,9 @@
-from django.contrib.auth import authenticate
-from django.shortcuts import render, redirect
-from django.http import JsonResponse, HttpResponse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.shortcuts import render
+from django.http import HttpResponse
 from Utilities.comUtilities import get_menu_list
 from .forms import UserForm, UserCreationForm
-from .models import User
 
 # Create your views here.
 def index(request):
@@ -12,22 +12,24 @@ def index(request):
 
 # views.py
 def menu_list(request):
-    menu_json = get_menu_list(request.session.get('auth'))
+    auth = request.session.get('auth')
+    if not request.user.is_authenticated:
+        auth = 'X'
+
+    menu_json = get_menu_list(auth)
 
     return HttpResponse(menu_json, content_type="application/json")
 
-def login(request):
+def login_sys(request):
     error = None
     if request.method == 'POST':
         email = request.POST.get('email')
-        # user_name = request.POST.get('user_name')
         passwd = request.POST.get('passwd')
 
-        # query the database for the user with the given username and password
-        # user = User.objects.get(email=email, password=passwd)
         user = authenticate(email=email, password=passwd)
 
         if user is not None:
+            login(request, user=user)
             # redirect the user to the home page
             request.session['email'] = user.email
             request.session['id'] = user.id
@@ -42,19 +44,18 @@ def login(request):
             request.session['user_name'] = user_name
 
             return render(request, 'common_ui/stock_man_index.html', {'user': user})
-            # return redirect('comui:welcome')
-            # return HttpResponseRedirect(redirect_to)
         else:
             # display an error message
-            error = 'Invalid user. Please try again.'
-            return JsonResponse({'error': error})
+            messages.error(request, '유효한 사용자가 아닙니다.')
+            form = UserForm()
     else:
         form = UserForm()
 
     # render the login page
     return render(request, 'common_ui/login.html', {'form': form})
 
-def logout(request):
+def logout_sys(request):
+    logout(request)
     if request.session.get('email'):
         del(request.session['email'])
         del(request.session['auth'])
@@ -68,8 +69,7 @@ def signup(request):
             form.save()
             email = form.cleaned_data.get('email')
             raw_password = form.cleaned_data.get('password1')
-            # user = authenticate(email=email, password=raw_password)
-            # login(request, user)
+
             form = UserForm()
             return render(request, 'common_ui/login.html', {'form': form})
     else:
