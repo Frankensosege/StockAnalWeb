@@ -1,6 +1,12 @@
 {% extends "base_stockMan.html" %}
 
 {% block content %}
+{% if messages %}
+    {% for message in messages %}
+        {{ message.tags }}
+        {{ message.message }}
+    {% endfor %}
+{% endif %}
 <form method="post" action="{% url 'comui:login' %}">
     {% csrf_token %}
     {% include "form_errors.html" %}

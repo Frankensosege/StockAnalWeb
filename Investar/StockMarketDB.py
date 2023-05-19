@@ -3,6 +3,7 @@ from Utilities.UsrLogger import stockLogger as sl
 from Utilities.DBManager import DBman
 from datetime import datetime, timedelta
 from Utilities.StockAnalExceptions import AnalException
+from WebCrawler.StockData import anlDataMng
 
 class MarketDB:
     def __init__(self):
@@ -19,7 +20,7 @@ class MarketDB:
             if ret_items == 0:
                 sql = "SELECT * FROM company_info ORDER BY company "
             else:
-                sql = f"SELECT * FROM company_info ORDER BY company LIMIT {start}, {ret_items}"
+                sql = f"SELECT * FROM company_info ORDER BY company LIMIT {start}, {ret_items} "
         else:
             sql = f"SELECT * FROM company_info WHERE code = '{item_code}'"
 
@@ -27,11 +28,22 @@ class MarketDB:
 
         return df
 
-    def get_invest_items(self, user_id=None):
+    def get_total_invest_item_count(self, user_id=None):
+        if user_id is None:
+            sql = 'SELECT COUNT(*) cnt FROM (SELECT DISTINCT code, company FROM invest_items) inv'
+        else:
+            sql = f'SELECT COUNT(*) cnt FROM invest_items where userid = "{user_id}"'
+        df = self.dbm.excute_alconn('get_total_invest_item_count', sql)
+        return df.iloc[0, 0]
+
+    def get_invest_items(self, user_id=None, start=0, ret_items=0):
         if not user_id is None:
             sql = f"SELECT code, company FROM invest_items WHERE user_id = '{user_id}'"
         else:
-            sql = "SELECT DISTINCT code, company FROM invest_items"
+            if ret_items==0:
+                sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company"
+            else:
+                sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start}, {ret_items}"
 
         df = self.dbm.excute_alconn('get_invest_items', sql)
 
@@ -88,3 +100,31 @@ class MarketDB:
         else:
             return "투자종목 삭제에 실패 했습니다."
         return None
+
+    def update_daily_price(self, start_date, items):
+        sd = anlDataMng()
+        for item in items:
+            print(item)
+            code, company = item.split()
+            df = sd.getDailyPriceNaver(code, company, start_date=start_date)
+
+            if df is None:
+                continue
+
+            for r in df.itertuples():
+                # MySQL용 Merge
+                sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
+                      f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
+                      f"ON DUPLICATE KEY " \
+                      f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
+
+                if not r.Index % 100:
+                    is_commit = True
+                else:
+                    is_commit= False
+                ret = self.dbm.excuteSQL('update_daily_price', sql)
+
+                if ret is None:
+                    return False
+        return True
+

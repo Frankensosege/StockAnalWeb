@@ -108,37 +108,9 @@
 
           // Display the first page of items in the left list
           displayPage(currentPage);
-          // Display user invest items in the right list
-          displayinvestitems();
         }
       });
     });
-
-    function displayinvestitems() {
-      var rightList = $('#rightList');
-      // Retrieve the total number of items from the database
-      $.ajax({
-        url: "{% url 'investar:retrieve_portpolio' %}",
-        type: 'GET',
-        success: function(data) {
-          // Display the items in the left list
-          data.forEach(function(item) {
-            itemtext = item.code + '  ' + item.company;
-            var listItem = $('<li>').addClass('list-item').text(itemtext);
-            listItem.click(function() {
-              for (var i=0; i<selitem.length; i ++) {
-                if (itemtext==selitem[i]) {
-                  selitem.splice(i, 1);
-                }
-              }
-              this.remove();
-            });
-            rightList.append(listItem);
-            selitem[selitem.length]=itemtext;
-          });
-        }
-      });
-    }
 
     function set_page_link(curr_page) {
       var pagesDiv = $('#pages');

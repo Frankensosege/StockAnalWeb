@@ -5,6 +5,8 @@ from Utilities.comUtilities import commonUtilities
 import mplfinance as mpf
 from Utilities.UsrLogger import stockLogger as sl
 import dart_fss as dart
+import time
+from datetime import datetime
 
 class anlDataMng:
     def __init__(self):
@@ -42,7 +44,7 @@ class anlDataMng:
 
         return s[-1]
 
-    def getDailyPriceNaver(self, itemCode, company, pages_to_fetch):
+    def getDailyPriceNaver(self, itemCode, company, pages_to_fetch=0, start_date=None):
         #Naver 종목별 시세 페이지
         try:
             url = self.cu.get_property('URLs', 'naverFinance')
@@ -53,6 +55,10 @@ class anlDataMng:
             if lastpg == None:
                 return None
             df = pd.DataFrame()
+
+            if start_date is not None:
+                str_dt = int(start_date.replace('-', ''))
+
             if pages_to_fetch == 0:
                 pages = int(lastpg)
             else:
@@ -64,8 +70,27 @@ class anlDataMng:
                 # break
                 html = requests.get(prcUrl, headers={'User-agent': 'Mozilla/5.0'}).text
 
-                df = df.append(pd.read_html(html, header=0)[0])
-                self.logger.info("getItemList : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
+                dayily_price = pd.read_html(html, header=0)[0]
+                dayily_price.dropna(inplace=True)
+                if start_date is not None:
+                    dp_df = pd.DataFrame()
+                    for r in dayily_price.itertuples():
+                        print(r[1])
+                        if r[1] is not None:
+                            if int(str(r[1]).replace('.', '')) < str_dt:
+                                dp_df.append(r)
+                    if len(dp_df) < 10:
+                        if len(dayily_price) > 0:
+                            df = df.append(dp_df)
+                        break
+                    dayily_price = dp_df
+                if page % 5:
+                    time.sleep(20)
+                df = df.append(dayily_price)
+                print("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
+                # self.logger.info("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
+
+            print(df)
 
             df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'diff', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume'})
             df['date'] = df['date'].replace('.', '-')
@@ -73,7 +98,8 @@ class anlDataMng:
             df[['close', 'diff', 'open', 'high', 'low', 'volume']] = df[['close', 'diff', 'open', 'high', 'low', 'volume']].astype(int)
             df = df[['date', 'open', 'high', 'low', 'close', 'diff', 'volume']]
         except Exception as e:
-            self.logger.error("getDailyPriceNaver : " + str(e))
+            print(e)
+            # self.logger.error("getDailyPriceNaver : " + str(e))
             return None
 
         return df

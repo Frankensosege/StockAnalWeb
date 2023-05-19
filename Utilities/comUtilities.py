@@ -14,8 +14,8 @@ def get_menu_list(auth):
                  "url": "",
                  "submenu": []
                  },
-                {"name": "주가관리",
-                 "url": "",
+                {"name": "종목관리",
+                 "url": "/stkadmin/item_admin/",
                  "submenu": []
                  },
                 {"name": "모델관리",
