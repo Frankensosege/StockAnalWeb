@@ -61,3 +61,40 @@ def save_item_price(request):
         return JsonResponse({'error': error})
 
     return HttpResponse(contJson, content_type="application/json")
+
+def item_fss(request):
+    cur_user = request.user
+    # user_id = request.session.get('id')
+    if not cur_user.is_authenticated:
+        return render(request, 'common_ui/stock_man_index.html')
+
+    return render(request, 'MlStockAdmin/item_fss_man.html', {'user': cur_user})
+
+def save_item_fss(request):
+    cur_user = request.user
+    if request.method == 'POST':
+        if not cur_user.is_authenticated:
+            return render(request, 'common_ui/stock_man_index.html')
+
+        invitems = json.loads(request.body)
+
+        start_date = invitems['start_date']
+        fs_sheet = invitems['fs_sheet']
+        items = invitems['item_list']
+        prepSQL = MarketDB()
+        if len(items) <= 0:
+            items_df = prepSQL.get_invest_items(user_id=None, start=0, ret_items=0)
+            for r in items_df.itertuples():
+                items.append(r[1] + ' ' + r[2])
+
+        ret = prepSQL.update_item_fss(start_date, fs_sheet, items)
+
+        if ret is not None:
+            contJson = {'result': ret}
+        else:
+            contJson = {'result': 'success'}
+    else:
+        error = '요청경로가 올바르지 않습니다.'
+        return JsonResponse({'error': error})
+
+    return HttpResponse(contJson, content_type="application/json")

@@ -23,7 +23,7 @@ def get_menu_list(auth):
                  "submenu": []
                  },
                 {"name": "재무제표",
-                 "url": "",
+                 "url": "/stkadmin/item_fss/",
                  "submenu": []
                  }
             ]
