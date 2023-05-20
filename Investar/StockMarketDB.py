@@ -118,13 +118,63 @@ class MarketDB:
                       f"ON DUPLICATE KEY " \
                       f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
 
-                if not r.Index % 100:
-                    is_commit = True
-                else:
-                    is_commit= False
-                ret = self.dbm.excuteSQL('update_daily_price', sql)
+                # if r.Index % 200 == 0 or r == (len(df) - 1):
+                #     is_commit = True
+                # else:
+                #     is_commit= False
+                ret = self.dbm.excuteSQL('update_daily_price', sql, True)
 
                 if ret is None:
                     return False
         return True
+
+    def update_item_fss(self, start_date, fs_sheet, items):
+        sd = anlDataMng()
+        cnt = 0
+        for item in items:
+            code, company = item.split()
+            start_date = start_date.replace('-', '')
+            dict = sd.get_dart_fss(code, start_date, fs_sheet)
+
+            if dict is None:
+                continue
+
+            for fss in dict:
+                data_df = dict[fss]
+                colums = data_df.columns
+
+                amt_df=pd.DataFrame()
+                for col in colums:
+                    if col.lower()=='ko':
+                        amt_df['account'] = data_df[col]
+                        continue
+                    if col.lower()=='en':
+                        continue
+
+                    _, fss_nm = fss.split('_')
+
+                    if fss_nm=='bs':
+                        dt_st, dt_en = col, col
+                    else:
+                        print('-------------------------------------')
+                        print(col)
+                        dt_st, dt_en = col.split('-')
+
+                    amt_df['amount'] = data_df[col]
+
+                    for idx, r in amt_df.iterrows():
+                        cnt += 1
+
+                        sql = f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
+                              f"VALUES ('{code}', '{fss_nm}', '{dt_st}', '{dt_en}','{r.account}', {r.amount}) " \
+                              f"ON DUPLICATE KEY UPDATE amount = {r.amount};"
+
+                        # if cnt % 200 == 0 or idx == (len(amt_df)-1):
+                        #     is_commit = True
+                        # else:
+                        #     is_commit = False
+                        ret = self.dbm.excuteSQL('update_item_fss', sql, True)
+
+
+
 

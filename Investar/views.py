@@ -71,3 +71,5 @@ def save_investitem(request):
         return JsonResponse({'error': error})
 
     return HttpResponse(contJson, content_type="application/json")
+
+

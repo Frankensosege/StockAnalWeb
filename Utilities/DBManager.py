@@ -4,12 +4,12 @@ from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text, engine
 import config.settings as conf
 import pandas as pd
+from Utilities.UsrLogger import stockLogger as sl
 
 class DBman:
     def __init__(self):
-        from Utilities.UsrLogger import stockLogger as sl
+
         dbconf = conf.DATABASES['default']
-        self.logger = sl(__name__).get_logger()
         self.prop = cu('./config.ini')
         self.host = dbconf['HOST']   # self.prop.get_property('DB', 'hostname')
         self.dbname = dbconf['NAME']   # self.prop.get_property('DB', 'dbname')
@@ -19,7 +19,7 @@ class DBman:
 
     def get_connection(self):
         try:
-            self.conn = dbl.connect(
+            conn = dbl.connect(
                                          host=self.host,
                                          # dbname=self.dbname,  --> postgreSQL
                                          db=self.dbname, # MySQL
@@ -29,9 +29,9 @@ class DBman:
                                          port=int(self.port) # MySQL
                                          )
         except Exception as e:
-            self.logger.error('get_connection', e)
+            sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))
             return None
-        return self.conn
+        return conn
 
     def get_alchmy_con(self, mode):
 
@@ -45,14 +45,17 @@ class DBman:
     def get_alchemy_query(self, query):
         return text(query)
 
-    def excuteSQL(self, sqlStr, iscommit=False):
+    def excuteSQL(self, exec_name, sqlStr, iscommit=True):
         try:
-            cur = self.conn.cursor()
+            print(sqlStr)
+            conn = self.get_connection()
+            cur = conn.cursor()
             cur.execute(sqlStr)
             if iscommit:
-                cur.commit()
+                conn.commit()
         except Exception as e:
-            self.logger.error('excuteSQL', e)
+            print(e)
+            # sl(__name__).get_logger().error(exec_name + str(e))
             return None
 
         return 0
@@ -64,7 +67,7 @@ class DBman:
             with al_conn.begin() as al_conn:
                 df = pd.read_sql(sql, al_conn)
         except Exception as e:
-            self.logger.info(exec_name + ': ' + str(e))
+            sl(__name__).get_logger().error("excute_alconn : " + str(e))
             return None
 
         return df
@@ -76,7 +79,7 @@ class DBman:
             with al_conn.begin() as al_conn:
                 result = al_conn.execute(sql)
         except Exception as e:
-            self.logger.info(exec_name + ': ' + str(e))
+            sl(__name__).get_logger().error("excute_alcon_CUD : " + str(e))
             return None
 
         return result

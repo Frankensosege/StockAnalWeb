@@ -10,7 +10,6 @@ from datetime import datetime
 
 class anlDataMng:
     def __init__(self):
-        self.logger = sl(__name__).get_logger()
         self.cu = commonUtilities('./config.ini')
 
     def getItemList(self):
@@ -25,7 +24,7 @@ class anlDataMng:
             df = df.rename(columns={'종목코드':'code', '회사명':'company'})
             df.code = df.code.map('{:06d}'.format)
         except Exception as e:
-            self.logger.error("getItemList : " + str(e))
+            sl(__name__).get_logger().error("getItemList : " + str(e))
             return None
 
         return df
@@ -57,7 +56,7 @@ class anlDataMng:
             df = pd.DataFrame()
 
             if start_date is not None:
-                str_dt = int(start_date.replace('-', ''))
+                str_dt = datetime.strptime(start_date, '%Y-%m-%d')
 
             if pages_to_fetch == 0:
                 pages = int(lastpg)
@@ -66,31 +65,25 @@ class anlDataMng:
 
             for page in range(1, pages + 1):
                 prcUrl = '{}&page={}'.format(url, page)
-                # print(prcUrl , '     ', pages)
-                # break
+
                 html = requests.get(prcUrl, headers={'User-agent': 'Mozilla/5.0'}).text
 
                 dayily_price = pd.read_html(html, header=0)[0]
                 dayily_price.dropna(inplace=True)
+
                 if start_date is not None:
-                    dp_df = pd.DataFrame()
-                    for r in dayily_price.itertuples():
-                        print(r[1])
-                        if r[1] is not None:
-                            if int(str(r[1]).replace('.', '')) < str_dt:
-                                dp_df.append(r)
-                    if len(dp_df) < 10:
+                    dayily_price = dayily_price[dayily_price['날짜'].apply(lambda x: datetime.strptime(x, '%Y.%m.%d') >= str_dt)]
+
+                    if len(dayily_price) < 10 or len(dayily_price) == 0:
                         if len(dayily_price) > 0:
-                            df = df.append(dp_df)
+                            df = df.append(dayily_price)
                         break
-                    dayily_price = dp_df
-                if page % 5:
+
+                if page % 10 == 0:
                     time.sleep(20)
                 df = df.append(dayily_price)
                 print("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
                 # self.logger.info("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
-
-            print(df)
 
             df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'diff', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume'})
             df['date'] = df['date'].replace('.', '-')
@@ -99,7 +92,7 @@ class anlDataMng:
             df = df[['date', 'open', 'high', 'low', 'close', 'diff', 'volume']]
         except Exception as e:
             print(e)
-            # self.logger.error("getDailyPriceNaver : " + str(e))
+            sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))
             return None
 
         return df
@@ -121,18 +114,27 @@ class anlDataMng:
         s = mpf.make_mpf_style(marketcolors=mc)
         mpf.plot(df, **kwargs, style=s)
 
-    def get_dart_fss(self, item_code, bgn_de, report_tp=['quarter']):
+    def get_dart_fss(self, item_code, bgn_de, report, report_tp=['quarter']):
         # Open DART API KEY 설정
         api_key = self.cu.get_property('DART', 'api_key')
         dart.set_api_key(api_key=api_key)
 
-        # DART 에 공시된 회사 리스트 불러오기
-        corp_list = dart.get_corp_list()
+        try:
+            # DART 에 공시된 회사 리스트 불러오기
+            corp_list = dart.get_corp_list()
 
-        dart_comp = corp_list.find_by_stock_code(item_code)
-        fs = dart_comp.extract_fs(bgn_de=bgn_de, report_tp=['quarter'])
+            dart_comp = corp_list.find_by_stock_code(item_code)
+            fs = dart_comp.extract_fs(bgn_de=bgn_de, report_tp=report_tp)
+        except Exception as e:
+            print(e)
+            # sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))
+            return None
 
-        report = ['bs', 'is', 'cis', 'cf']  ## 4개의 보고서
+        if report=='all':
+            report = ['bs', 'is', 'cis', 'cf']  ## 4개의 보고서
+        else:
+            report = [report]
+
         data_dict = {}  ## 데이터 프레임 만들기전에 dict형태로 저장
 
         for i in report:
@@ -147,7 +149,7 @@ class anlDataMng:
                 df.index.names = [None] * len(df.index.names)  # 멀티 인덱스 삭제 및 해결부분
                 columns = ['ko', 'en'] + new_index  ## 한글명, 영어명 +인덱스 추출부분으로 데이터프레임 재생산
                 df.columns = columns
-                data_dict['data_' + i] = df.T  ## 전치해서 딕셔너리에 저장
+                data_dict['data_' + i] = df  ## 전치해서 딕셔너리에 저장
 
         return data_dict
 

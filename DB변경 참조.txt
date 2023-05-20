@@ -1,0 +1,44 @@
+CREATE TABLE IF NOT EXISTS company_info
+(
+    code character varying(20) NOT NULL,
+    company character varying(40) NOT NULL,
+    last_update date,
+    CONSTRAINT company_info_pkey PRIMARY KEY (code)
+)
+
+
+CREATE TABLE IF NOT EXISTS daily_price
+(
+    code character varying(20) NOT NULL,
+    date date NOT NULL,
+    open bigint,
+    high bigint,
+    low bigint,
+    close bigint,
+    diff bigint,
+    volume bigint,
+    CONSTRAINT daily_price_pkey PRIMARY KEY (code, date)
+)
+
+CREATE TABLE `invest_items` (
+  `user_id` bigint NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `company` varchar(40) NOT NULL,
+  `last_update` date DEFAULT NULL,
+  PRIMARY KEY (`user_id`, `code`),
+  UNIQUE KEY `invest_items` (`user_id`, `code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `item_fss` (
+  `code` varchar(20) NOT NULL,
+  `fss_code` varchar(3) NOT NULL,
+  `date_start` date NOT NULL,
+  `date_end` date NOT NULL,
+  `account_nm` varchar(500) NOT NULL,
+  `amount` bigint DEFAULT NULL,
+  PRIMARY KEY (`code`,`fss_code`, `date_start`, `date_end`, `account_nm`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+pip install mplfinance
+import psycopg2 dbl -> import MySQLdb as dbl
+pip3 install lxml
