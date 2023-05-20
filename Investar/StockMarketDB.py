@@ -156,8 +156,6 @@ class MarketDB:
                     if fss_nm=='bs':
                         dt_st, dt_en = col, col
                     else:
-                        print('-------------------------------------')
-                        print(col)
                         dt_st, dt_en = col.split('-')
 
                     amt_df['amount'] = data_df[col]
