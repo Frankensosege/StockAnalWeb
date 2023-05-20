@@ -1,5 +1,10 @@
 {% extends "base_stockMan.html" %}
 
+{% block lik %}
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css">
+  <script src="http://code.jquery.com/ui/1.8.18/jquery-ui.min.js"></script>
+{% endblock %}
+
 {% block style %}
   <style>
     .container {
@@ -64,9 +69,13 @@
         {{ message.message }}
     {% endfor %}
 {% endif %}
+<h2>종목별 재무정보관리</h2>
+<p></p>
+<p></p>
+<p></p>
   <div class="container show-grid">
     <div class="col-md-6">
-      <h5>KOSPI 종목</h5>
+      <h5>대상 KOSPI 종목</h5>
       <div class="row">
 
         <ul class="list" id="leftList">
@@ -81,10 +90,29 @@
     </div>
     <div class="col-md-6">
       {% csrf_token %}
-      <h5>투자 종목</h5>
-      <ul class="list" id="rightList">
-      </ul>
-      <button onclick="saveitems()">저장</button>
+      <div class="col-md-4"> <label>From</label> <input type="text" id="datePicker" class="form-control"> </div>
+        <p></p>
+      <div class="col-md-4"> <label>종목</label>
+        <ul class="list" id="rightList"></ul>
+      </div>
+        <p></p>
+      <!-- Single button -->
+      <div class="col-md-4"> <label> 재무제표 </label>
+      <div class="col-md-4">
+          <select id="fss_nm">
+              <option value="all" selected> 전체 </option>
+              <option value="bs"> 재무상태표 </option>
+              <option value="is"> 손익계산서 </option>
+              <option value="cis"> 자본변동표 </option>
+              <option value="cf"> 현금흐름표 </option>
+          </select>
+
+      </div>
+        <p></p>
+
+      <div class="col-md-4">
+        <button onclick="saveitems()" style="width:200px">재무정보가져오기</button>
+      </div>
     </div>
   </div>
 
@@ -98,13 +126,15 @@
 
       // Retrieve the total number of KOSPI items from the database
       $.ajax({
-        url: "{% url 'investar:total_item_count' %}",
+        url: "{% url 'stkadmin:total_item_count' %}",
         type: 'GET',
         success: function(totalItems) {
 
           // Display the pages links
           totalPages = Math.ceil(totalItems.totalItems / itemsPerPage);
-          set_page_link(currentPage);
+          if (totalPages>itemsPerPage) {
+            set_page_link(currentPage);
+          }
 
           // Display the first page of items in the left list
           displayPage(currentPage);
@@ -159,15 +189,13 @@
 
     function displayPage(pageNumber) {
       var leftList = $('#leftList');
-      var rightList = $('#rightList');
 
       // Clear the left and right lists
       leftList.empty();
-      // rightList.empty();
 
       // Retrieve the items for the specified page from the database
       $.ajax({
-        url: "{% url 'investar:get_paged_item' %}",
+        url: "{% url 'stkadmin:get_paged_item' %}",
         type: 'GET',
         data: { limit: 20, offset: (pageNumber - 1) * 20 },
         success: function(data) {
@@ -185,6 +213,24 @@
           //$('.page-link').eq(pageNumber - 1).addClass('active-page');
         }
       });
+    }
+
+
+
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
     }
 
     function selectItem(item) {
@@ -206,6 +252,8 @@
       }
     }
 
+
+
     function is_selected(text) {
       for (var i=0; i<selitem.length; i ++) {
         if (text==selitem[i]) return true;
@@ -213,29 +261,21 @@
       return false;
     }
 
-    function getCookie(name) {
-      var cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-          var cookies = document.cookie.split(';');
-          for (var i = 0; i < cookies.length; i++) {
-              var cookie = cookies[i].trim();
-              // Does this cookie string begin with the name we want?
-              if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;
-              }
-          }
-      }
-      return cookieValue;
-    }
-
     // Save selected invest items by user
     function saveitems() {
-      if (selitem.length <= 0) return;
-      var Json = JSON.stringify(selitem);
+      var start_date = $('#datePicker').val();
+      var fss_nm = $('select').val();
+
+      if (start_date=="") {
+        alert('시작일자는 필수 입니다.');
+        return false;
+      }
+
+      var save_json = {'start_date': start_date, 'fs_sheet': fss_nm, 'item_list': selitem};
+      var Json = JSON.stringify(save_json);
       var csrftoken = getCookie('csrftoken');
       $.ajax({
-        url: "{% url 'investar:save_investitem' %}",
+        url: "{% url 'stkadmin:save_item_fss' %}",
         type: 'POST',
         data: Json,
         success: function(data) {
@@ -243,6 +283,24 @@
         }
       });
     }
+
+
+    $(function() {
+        $("#datePicker").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            nextText: '다음달',
+            prevText: '이전달',
+            currentText: '오늘 날짜',
+            closeText: '닫기',
+            dateFormat: "yy-mm-dd",
+            dayNames: ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'],
+            dayNamesMin: ['월', '화', '수', '목', '금', '토', '일'],
+            monthNamesShort: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+            monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+        });
+    });
+
   </script>
 {% endblock %}
 
