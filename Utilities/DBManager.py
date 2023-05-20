@@ -48,11 +48,12 @@ class DBman:
     def excuteSQL(self, exec_name, sqlStr, iscommit=True):
         try:
             print(sqlStr)
-            conn = self.get_connection()
-            cur = conn.cursor()
-            cur.execute(sqlStr)
-            if iscommit:
-                conn.commit()
+            # conn = self.get_connection()
+            with self.get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute(sqlStr)
+                if iscommit:
+                    conn.commit()
         except Exception as e:
             print(e)
             # sl(__name__).get_logger().error(exec_name + str(e))
