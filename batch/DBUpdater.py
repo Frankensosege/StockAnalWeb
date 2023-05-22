@@ -3,16 +3,14 @@ import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
 from datetime import datetime
 from Utilities.DBManager import DBman
-from Investar.StockMarketDB import MarketDB
+from Utilities.StockMarketDB import MarketDB
 from Utilities.comUtilities import commonUtilities
 
 class DBUpdater:
-    codes = {}
+    codes = pd.DataFrame()
     def __init__(self):
         """생성자 : DB 연결 및 종목코드 딕셔너리 생성"""
         self.dbm = DBman()
-        self.conn = self.dbm.get_connection()
-        self.logger = sl(__name__).get_logger()
         self.cu = commonUtilities('./config.ini')
 
     def __del__(self):
@@ -21,70 +19,74 @@ class DBUpdater:
         # self.conn.close()
 
     def update_comp_info(self):
-        self.logger.info('update_comp_info : DB에 저장된 company_info의 종목 정보를 딕셔너리에 저장')
+        sl(__name__).get_logger().info('update_comp_info : DB에 저장된 company_info의 종목 정보를 딕셔너리에 저장')
         sd = anlDataMng()
 
-        mkdb = MarketDB(self.dbm, self.logger)
-        df = mkdb.get_comp_info()
+        mkdb = MarketDB()
+        # self.codes = mkdb.get_comp_info()
         # df = MarketDB().get_comp_info()
 
-        for idx in range(len(df)):
-            self.codes[df['code'].values[idx]] = df['company'].values[idx]
+        # for idx in range(len(df)):
+        #     self.codes[df['code'].values[idx]] = df['company'].values[idx]
 
         """종목코드를 company_info 테이블에 업데이트한 후 딕셔너리에 저장"""
-        krx = pd.DataFrame()
-        krx = sd.getItemList()
-        today = datetime.today().strftime('%Y-%m-%d')
+        # krx = pd.DataFrame()
+        # krx = sd.getItemList()
+        self.codes = sd.getItemList()
 
-        try:
-            with self.conn.cursor() as cur:
-                """가장 최근 company_info update 일자"""
-                sql = "SELECT max(last_update) FROM company_info"
-                cur.execute(sql)
-                rs = cur.fetchone()
-
-                if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
-                    self.logger.info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
-                    for idx in range(len(krx)):
-                        code = krx.code.values[idx]
-                        company = krx.company.values[idx]
-
-                        # MySQL용 Merge
-                        sql = f"INSERT INTO company_info (code, company, last_update) " \
-                              f"VALUES ('{code}', '{company}', '{today}') " \
-                              f"ON DUPLICATE KEY " \
-                              f"UPDATE company = '{company}', last_update = '{today}'; "
-
-
-                        # postgreSQL 용 Merge 문
-                        # sql = f"WITH upsert AS "\
-                        #       f"(UPDATE company_info "\
-                        #       f" SET company = '{company}', "\
-                        #       f"     last_update = '{today}' "\
-                        #       f" WHERE code = '{code}' "\
-                        #       f" RETURNING * ) "\
-                        #       f"INSERT INTO company_info (code, company, last_update) "\
-                        #       f"SELECT '{code}', '{company}', '{today}' " \
-                        #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
-
-
-                        self.logger.info(f'update_comp_info : {sql}')
-                        cur.execute(sql)
-                        self.codes[code] = company
-                    self.conn.commit()
-                    self.logger.info('update_comp_info : End INSERT company information')
-
-        except Exception as e:
-            self.conn.rollback()
-            self.logger.info('update_comp_info : ' +  str(e))
+        mkdb.update_comp_info(self.codes)
+        # today = datetime.today().strftime('%Y-%m-%d')
+        #
+        # try:
+        #     conn = self.dbm.get_connection()
+        #     with conn.cursor() as cur:
+        #         """가장 최근 company_info update 일자"""
+        #         sql = "SELECT max(last_update) FROM company_info"
+        #         cur.execute(sql)
+        #         rs = cur.fetchone()
+        #
+        #         if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
+        #             sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
+        #             for idx in range(len(krx)):
+        #                 code = krx.code.values[idx]
+        #                 company = krx.company.values[idx]
+        #
+        #                 # MySQL용 Merge
+        #                 sql = f"INSERT INTO company_info (code, company, last_update) " \
+        #                       f"VALUES ('{code}', '{company}', '{today}') " \
+        #                       f"ON DUPLICATE KEY " \
+        #                       f"UPDATE company = '{company}', last_update = '{today}'; "
+        #
+        #
+        #                 # postgreSQL 용 Merge 문
+        #                 # sql = f"WITH upsert AS "\
+        #                 #       f"(UPDATE company_info "\
+        #                 #       f" SET company = '{company}', "\
+        #                 #       f"     last_update = '{today}' "\
+        #                 #       f" WHERE code = '{code}' "\
+        #                 #       f" RETURNING * ) "\
+        #                 #       f"INSERT INTO company_info (code, company, last_update) "\
+        #                 #       f"SELECT '{code}', '{company}', '{today}' " \
+        #                 #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+        #
+        #
+        #                 cur.execute(sql)
+        #                 self.codes[code] = company
+        #             conn.commit()
+        #             sl(__name__).get_logger().info('update_comp_info : End INSERT company information')
+        #
+        # except Exception as e:
+        #     conn.rollback()
+        #     sl(__name__).get_logger().info('update_comp_info : ' +  str(e))
 
 
     def replace_price_naver(self, df, num, code, company):
         """네이버 금융에서 주식시세를 읽어 DB에 replace"""
         try:
-            with self.conn.cursor() as cur:
+            conn = self.dbm.get_connection()
+            with conn.cursor() as cur:
                 for r in df.itertuples():
-                    self.logger.info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, r.date))
+                    sl(__name__).get_logger().info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, r.date))
                     # MySQL용 Merge
                     sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
                           f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
@@ -108,13 +110,13 @@ class DBUpdater:
                     #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
                     cur.execute(sql)
                     if not r.Index % 100:
-                        self.conn.commit()
-                self.conn.commit()
-                self.logger.info('replace_price_naver : End update daily price #{:04d} {}:{}'.format(num+1, code, company))
+                        conn.commit()
+                conn.commit()
+                sl(__name__).get_logger().info('replace_price_naver : End update daily price #{:04d} {}:{}'.format(num+1, code, company))
 
         except Exception as e:
-            self.conn.rollback()
-            self.logger.info('replace_price_naver :' + str(e))
+            conn.rollback()
+            sl(__name__).get_logger().info('replace_price_naver :' + str(e))
 
     def update_daily_price(self, pages_to_fetch):
         """네이버 금융에서 주식시세를 읽어 DB에 update"""
@@ -131,10 +133,11 @@ class DBUpdater:
         """company_info 테이블로 부터 회사(법인)명을 가져온다"""
         sql = f"SELECT company FROM company_info WHRER ={code}"
         try:
-            rs = pd.read_sql(sql, self.conn)
+            conn = self.dbm.get_connection()
+            rs = pd.read_sql(sql, conn)
         except Exception as e:
-            self.conn.rollback()
-            self.logger.info('get_company_name : ', e)
+            conn.rollback()
+            sl(__name__).get_logger().info('get_company_name : ', e)
             return None
 
         return rs[0]
@@ -154,7 +157,7 @@ class DBUpdater:
         """실행 즉시 및 매일 오후 5시에 daily_price 테이블 update"""
         # pages_to_fetch 가져올 일별 price(0 전체)
         pages_to_fetch = self.cu.get_property('DPrice', 'pages_to_fetch')
-        self.logger.info('execute_daily : start-----')
+        sl(__name__).get_logger().info('execute_daily : start-----')
         self.update_comp_info()
         self.update_daily_price(pages_to_fetch)
 

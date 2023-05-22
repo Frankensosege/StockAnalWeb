@@ -2,7 +2,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import requests
 from Utilities.comUtilities import commonUtilities
-import mplfinance as mpf
+# import mplfinance as mpf
 from Utilities.UsrLogger import stockLogger as sl
 import dart_fss as dart
 import time
@@ -97,22 +97,22 @@ class anlDataMng:
 
         return df
 
-    def drawCandleChart(self, sdate, ldate, itemcode):
-        #읽어온 데이터를 캔들 챠트로 출력한다.
-        # to-do 1. Item 코드로 DB에서 데이터 읽어어와 pandas dataFrame으로 변환 한다. ?
-        # to-do 2. 파라메터로 받은 시작 종료일로 주가 표시할 기간 만큼 dataFrame을 slicing 한다.
-        # to-do 3. 파라메터로 받은 종목코드로 종목명을 가져와 챠트 제목에 달아준다.
-        df = self.getDailyPrice(itemcode)
-        df = df.iloc[0:30] #to-do 2 참고할 것
-        df = df.rename(columns={'날짜':'Date', '시가':'Open', '고가':'High', '저가':'Low', '종가':'Close', '거래량':'Volume'})
-        df = df.sort_values(by='Date')
-        df.index = pd.to_datetime(df.Date)
-        df = df['Open', 'High', 'Low', 'Close', 'Volume']
-
-        kwargs = dict(title='{} candle chart'.format(itemcode), type='candle', mav=(2, 4, 6), value=True, ylabel='ohlc candles')
-        mc = mpf.make_marketcolors(up='r', down='b', inherit=True)
-        s = mpf.make_mpf_style(marketcolors=mc)
-        mpf.plot(df, **kwargs, style=s)
+    # def drawCandleChart(self, sdate, ldate, itemcode):
+    #     #읽어온 데이터를 캔들 챠트로 출력한다.
+    #     # to-do 1. Item 코드로 DB에서 데이터 읽어어와 pandas dataFrame으로 변환 한다. ?
+    #     # to-do 2. 파라메터로 받은 시작 종료일로 주가 표시할 기간 만큼 dataFrame을 slicing 한다.
+    #     # to-do 3. 파라메터로 받은 종목코드로 종목명을 가져와 챠트 제목에 달아준다.
+    #     df = self.getDailyPrice(itemcode)
+    #     df = df.iloc[0:30] #to-do 2 참고할 것
+    #     df = df.rename(columns={'날짜':'Date', '시가':'Open', '고가':'High', '저가':'Low', '종가':'Close', '거래량':'Volume'})
+    #     df = df.sort_values(by='Date')
+    #     df.index = pd.to_datetime(df.Date)
+    #     df = df['Open', 'High', 'Low', 'Close', 'Volume']
+    #
+    #     kwargs = dict(title='{} candle chart'.format(itemcode), type='candle', mav=(2, 4, 6), value=True, ylabel='ohlc candles')
+    #     mc = mpf.make_marketcolors(up='r', down='b', inherit=True)
+    #     s = mpf.make_mpf_style(marketcolors=mc)
+    #     mpf.plot(df, **kwargs, style=s)
 
     def get_dart_fss(self, item_code, bgn_de, report, report_tp=['quarter']):
         # Open DART API KEY 설정
