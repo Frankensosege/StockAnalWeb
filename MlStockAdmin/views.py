@@ -1,7 +1,7 @@
 import json
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
-from Investar.StockMarketDB import MarketDB
+from Utilities.StockMarketDB import MarketDB
 
 # Create your views here.
 def item_admin(request):

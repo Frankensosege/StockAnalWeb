@@ -15,6 +15,50 @@ class MarketDB:
     #     """소멸자 : DB 연결 해제"""
     #     self.conn.close()
 
+    def update_comp_info(self, krx):
+        today = datetime.today().strftime('%Y-%m-%d')
+
+        try:
+            conn = self.dbm.get_connection()
+            with conn.cursor() as cur:
+                """가장 최근 company_info update 일자"""
+                sql = "SELECT max(last_update) FROM company_info"
+                cur.execute(sql)
+                rs = cur.fetchone()
+
+                if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
+                    sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
+                    for idx, r in krx.iterrows():
+
+                        # MySQL용 Merge
+                        sql = f"INSERT INTO company_info (code, company, last_update) " \
+                              f"VALUES ('{r.code}', '{r.company}', '{today}') " \
+                              f"ON DUPLICATE KEY " \
+                              f"UPDATE company = '{r.company}', last_update = '{today}'; "
+
+
+                        # postgreSQL 용 Merge 문
+                        # sql = f"WITH upsert AS "\
+                        #       f"(UPDATE company_info "\
+                        #       f" SET company = '{company}', "\
+                        #       f"     last_update = '{today}' "\
+                        #       f" WHERE code = '{code}' "\
+                        #       f" RETURNING * ) "\
+                        #       f"INSERT INTO company_info (code, company, last_update) "\
+                        #       f"SELECT '{code}', '{company}', '{today}' " \
+                        #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+
+
+                        cur.execute(sql)
+                        self.codes[code] = company
+                    conn.commit()
+                    sl(__name__).get_logger().info('update_comp_info : End INSERT company information')
+
+        except Exception as e:
+            conn.rollback()
+            sl(__name__).get_logger().info('update_comp_info : ' +  str(e))
+
+
     def get_comp_info(self, item_code=None, start=0, ret_items=0):
         if item_code is None:
             if ret_items == 0:
@@ -104,7 +148,6 @@ class MarketDB:
     def update_daily_price(self, start_date, items):
         sd = anlDataMng()
         for item in items:
-            print(item)
             code, company = item.split()
             df = sd.getDailyPriceNaver(code, company, start_date=start_date)
 
@@ -163,6 +206,7 @@ class MarketDB:
                     for idx, r in amt_df.iterrows():
                         cnt += 1
 
+                        # MySQL용 Merge
                         sql = f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
                               f"VALUES ('{code}', '{fss_nm}', '{dt_st}', '{dt_en}','{r.account}', {r.amount}) " \
                               f"ON DUPLICATE KEY UPDATE amount = {r.amount};"

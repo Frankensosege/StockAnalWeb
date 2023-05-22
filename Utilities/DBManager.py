@@ -1,10 +1,11 @@
-# import psycopg2 dbl
-import MySQLdb as dbl
+import psycopg2 as dbl
+# import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text, engine
 import config.settings as conf
 import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
+from Utilities.StockAnalExceptions import AnalException
 
 class DBman:
     def __init__(self):
@@ -16,28 +17,43 @@ class DBman:
         self.user = dbconf['USER']   # self.prop.get_property('DB', 'username')
         self.password = dbconf['PASSWORD']   # self.prop.get_property('DB', 'password')
         self.port = dbconf['PORT']   # self.prop.get_property('DB', 'port')
+        db_engine = dbconf['ENGINE']
+        self.dbNm = db_engine.split('.')[3]
+
+    def get_db_nm(self):
+        return self.dbNm
 
     def get_connection(self):
         try:
-            conn = dbl.connect(
-                                         host=self.host,
-                                         # dbname=self.dbname,  --> postgreSQL
-                                         db=self.dbname, # MySQL
-                                         user=self.user,
-                                         password=self.password,
-                                         # port=self.port   --> postgreSQL
-                                         port=int(self.port) # MySQL
-                                         )
+            if self.dbNm == 'mysql':
+                conn = dbl.connect(
+                     host=self.host,
+                     db=self.dbname,
+                     user=self.user,
+                     password=self.password,
+                     port=int(self.port)
+                     )
+            elif self.dbNm == 'postgresql':
+                conn = dbl.connect(
+                    host=self.host,
+                    dbname=self.dbname,
+                    user=self.user,
+                    password=self.password,
+                    port=self.port
+                )
+            else:
+                raise AnalException("DB를 확인하세요....")
         except Exception as e:
             sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))
             return None
         return conn
 
     def get_alchmy_con(self, mode):
-
+        db_pre = 'mysql+mysqldb'
+        if self.dbNm == 'postgresql':
+            db_pre = 'postgresql+psycopg2'
         engine = create_engine(
-            # 'postgresql+psycopg2://{}:{}@{}:{}/{}'.format(self.user, self.password, self.host, self.port, self.dbname),  --> postgreSQL
-            'mysql+mysqldb://{}:{}@{}:{}/{}'.format(self.user, self.password, self.host, self.port, self.dbname), # MySQL
+            db_pre + f'://{self.user}:{self.password}@{self.host}:{self.port}/{self.dbname}',
             isolation_level=mode
         )
         return engine

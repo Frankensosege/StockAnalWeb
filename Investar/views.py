@@ -2,7 +2,7 @@ import json
 from django.contrib import messages
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
-from Investar.StockMarketDB import MarketDB
+from Utilities.StockMarketDB import MarketDB
 
 def create_portpolio(request):
     cur_user = request.user
