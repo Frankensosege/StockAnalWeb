@@ -1,7 +1,7 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-from Utilities.comUtilities import commonUtilities
+from Utilities.comUtilities import get_property
 # import mplfinance as mpf
 from Utilities.UsrLogger import stockLogger as sl
 import dart_fss as dart
@@ -9,14 +9,12 @@ import time
 from datetime import datetime
 
 class anlDataMng:
-    def __init__(self):
-        self.cu = commonUtilities('./config.ini')
 
     def getItemList(self):
         #한국거래소 기업공시 체널에서 종목 목록 가져오기
         try:
-            url = '{}{}{}'.format(self.cu.get_property('URLs', 'kind'),
-                                    self.cu.get_property('URLs', 'kindItemPage'),
+            url = '{}{}{}'.format(get_property('URLs', 'kind'),
+                                    get_property('URLs', 'kindItemPage'),
                                     '/corpList.do?method=download&searchType=13')
             print(url)
             df = pd.read_html(url)[0]
@@ -34,7 +32,7 @@ class anlDataMng:
 
         lp_html = requests.get(url, headers={'User-agent':'Mozilla/5.0'}).text
         bs = BeautifulSoup(lp_html, 'lxml')
-        pgrr = bs.find('td', class_=self.cu.get_property('ETC', 'naverLpageClass'))
+        pgrr = bs.find('td', class_=get_property('ETC', 'naverLpageClass'))
         if pgrr == None:
             return None
         s = str(pgrr.a['href']).split('=')
@@ -46,8 +44,8 @@ class anlDataMng:
     def getDailyPriceNaver(self, itemCode, company, pages_to_fetch=0, start_date=None):
         #Naver 종목별 시세 페이지
         try:
-            url = self.cu.get_property('URLs', 'naverFinance')
-            url = '{}{}?code={}'.format(url, self.cu.get_property('URLs', 'naverItmePrice'), itemCode)
+            url = get_property('URLs', 'naverFinance')
+            url = '{}{}?code={}'.format(url, get_property('URLs', 'naverItmePrice'), itemCode)
             # Naver 종목별 시세 마지막 페이지 가져오기
             urlpage = '{}&page=1'.format(url)
             lastpg = self.__getLastPageNaver(urlpage)
@@ -85,11 +83,11 @@ class anlDataMng:
                 print("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
                 # self.logger.info("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
 
-            df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'diff', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume'})
+            df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'differ', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume'})
             df['date'] = df['date'].replace('.', '-')
             df = df.dropna()
-            df[['close', 'diff', 'open', 'high', 'low', 'volume']] = df[['close', 'diff', 'open', 'high', 'low', 'volume']].astype(int)
-            df = df[['date', 'open', 'high', 'low', 'close', 'diff', 'volume']]
+            df[['close', 'differ', 'open', 'high', 'low', 'volume']] = df[['close', 'differ', 'open', 'high', 'low', 'volume']].astype(int)
+            df = df[['date', 'open', 'high', 'low', 'close', 'differ', 'volume']]
         except Exception as e:
             print(e)
             sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))

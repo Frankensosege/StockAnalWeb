@@ -14,7 +14,7 @@ def PredictBuySalePoint(item):
     # 5. 모델의 예측 결과를 돌려 준다.
     pass
 
-def LeanBuySalePoint(item):
+def LearnBuySalePoint(item):
     ### async를 사용하여 백그라운드로 학습 하도록 한다.
     # 1. 종목별로 매매시점 학습 할 모델을 가져온다
     # 2. 학습시킬 자료를 가져온다

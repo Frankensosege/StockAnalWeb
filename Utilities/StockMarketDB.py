@@ -8,8 +8,7 @@ from WebCrawler.StockData import anlDataMng
 class MarketDB:
     def __init__(self):
         self.dbm = DBman()
-        # self.conn = self.dbm.get_connection()
-        self.logger = sl(__name__).get_logger()
+        # self.logger = sl(__name__).get_logger()
 
     # def __del__(self):
     #     """소멸자 : DB 연결 해제"""
@@ -22,20 +21,20 @@ class MarketDB:
         df = self.dbm.excute_alconn('get_company_name', sql)
         return df.iloc[0, 0]
 
-    def replace_dily_price(self, row, code, company):
+    def replace_daily_price(self, row, code):
         """네이버 금융에서 주식시세를 읽어 DB에 replace"""
         # try:
         #     conn = self.dbm.get_connection()
         #     with conn.cursor() as cur:
         #         for r in df.itertuples():
         dbNm = self.dbm.get_db_nm()
-        sl(__name__).get_logger().info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, row.date))
+        # sl(__name__).get_logger().info('replace_price_naver: code:{}, name:{}, price_date:{}'.format(code, company, row.date))
         if dbNm == 'mysql':
             # MySQL용 Merge
             sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
-                  f"VALUES ('{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.diff}, {row.volume}) " \
+                  f"VALUES ('{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.differ}, {row.volume}) " \
                   f"ON DUPLICATE KEY " \
-                  f"UPDATE open = '{row.open}', high = '{row.high}', low = '{row.low}', close = '{row.close}', diff = '{row.diff}', volume = '{row.volume}'; "
+                  f"UPDATE open = '{row.open}', high = '{row.high}', low = '{row.low}', close = '{row.close}', diff = '{row.differ}', volume = '{row.volume}'; "
         elif dbNm == 'postgresql':
             # postgreSQL 용 Merge 문
             sql = f"WITH upsert AS "\
@@ -50,7 +49,7 @@ class MarketDB:
                   f" AND   date = '{row.date}' "\
                   f" RETURNING * ) "\
                   f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) "\
-                  f"SELECT '{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.diff}, {row.volume} " \
+                  f"SELECT '{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.differ}, {row.volume} " \
                   f"WHERE NOT EXISTS (SELECT * FROM upsert);"
         #             cur.execute(sql)
         #             if not r.Index % 100:
@@ -61,7 +60,7 @@ class MarketDB:
         # except Exception as e:
         #     conn.rollback()
         #     sl(__name__).get_logger().info('replace_price_naver :' + str(e))
-        ret = self.dbm.excuteSQL('replace_dily_price', sql, True)
+        ret = self.dbm.excuteSQL('replace_daily_price', sql, True)
 
         return ret
 
@@ -82,7 +81,6 @@ class MarketDB:
         #         rs = cur.fetchone()
 
                 # if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
-        sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
 
         dbNm = self.dbm.get_db_nm()
         # for idx, r in krx.iterrows():
@@ -217,18 +215,18 @@ class MarketDB:
                 if dbNm == 'mysql':
                     # MySQL용 Merge
                     sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
-                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
+                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume}) " \
                           f"ON DUPLICATE KEY " \
-                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
+                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.differ}', volume = '{r.volume}'; "
                 elif dbNm == 'postgresql':
                     # postgreSQL 용 Merge 문
                     sql = f"WITH upsert AS "\
                           f"(UPDATE daily_price "\
-                          f" SET open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}' "\
+                          f" SET open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.differ}', volume = '{r.volume}' "\
                           f" WHERE code = '{code}', date = '{r.date}' "\
                           f" RETURNING * ) "\
                           f"INSERT INTO daily_price (ccode, date, open, high, low, close, diff, volume) "\
-                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
+                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume} " \
                           f"WHERE NOT EXISTS (SELECT * FROM upsert);"
 
                 # if r.Index % 200 == 0 or r == (len(df) - 1):
