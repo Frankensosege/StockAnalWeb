@@ -10,7 +10,7 @@ def create_portpolio(request):
     if not cur_user.is_authenticated:
         return render(request, 'common_ui/stock_man_index.html')
 
-    return render(request, 'MlStockAdmin/invest_item_man.html', {'user': cur_user})
+    return render(request, 'Investar/invest_items.html', {'user': cur_user})
 
 def total_item_count(request):
     total_count = MarketDB().get_total_item_count()

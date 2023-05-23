@@ -10,7 +10,7 @@ class DBUpdater:
     codes = pd.DataFrame()
     def __init__(self):
         """생성자 : DB 연결 및 종목코드 딕셔너리 생성"""
-        self.dbm = DBman()
+        # self.dbm = DBman()
         self.cu = commonUtilities('./config.ini')
 
     def __del__(self):
@@ -19,7 +19,7 @@ class DBUpdater:
         # self.conn.close()
 
     def update_comp_info(self):
-        sl(__name__).get_logger().info('update_comp_info : DB에 저장된 company_info의 종목 정보를 딕셔너리에 저장')
+        # sl(__name__).get_logger().info('update_comp_info : DB에 저장된 company_info의 종목 정보를 딕셔너리에 저장')
         sd = anlDataMng()
 
         mkdb = MarketDB()
@@ -28,13 +28,16 @@ class DBUpdater:
 
         # for idx in range(len(df)):
         #     self.codes[df['code'].values[idx]] = df['company'].values[idx]
+        today = datetime.today().strftime('%Y-%m-%d')
+        lst_dt = mkdb.get_laste_upate_comp()
 
         """종목코드를 company_info 테이블에 업데이트한 후 딕셔너리에 저장"""
         # krx = pd.DataFrame()
         # krx = sd.getItemList()
         self.codes = sd.getItemList()
-
-        mkdb.update_comp_info(self.codes)
+        if lst_dt == None or lst_dt.strftime('%Y-%m-%d') < today:
+            for idx, r in self.codes.iterrows():
+                mkdb.update_comp_info(r, today)
         # today = datetime.today().strftime('%Y-%m-%d')
         #
         # try:
@@ -78,80 +81,38 @@ class DBUpdater:
         # except Exception as e:
         #     conn.rollback()
         #     sl(__name__).get_logger().info('update_comp_info : ' +  str(e))
+        sl(__name__).get_logger().info('update_comp_info : End INSERT company information')
 
-
-    def replace_price_naver(self, df, num, code, company):
-        """네이버 금융에서 주식시세를 읽어 DB에 replace"""
-        try:
-            conn = self.dbm.get_connection()
-            with conn.cursor() as cur:
-                for r in df.itertuples():
-                    sl(__name__).get_logger().info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, r.date))
-                    # MySQL용 Merge
-                    sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
-                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
-                          f"ON DUPLICATE KEY " \
-                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
-
-                    # postgreSQL 용 Merge 문
-                    # sql = f"WITH upsert AS "\
-                    #       f"(UPDATE daily_price "\
-                    #       f" SET open = {r.open}, "\
-                    #       f"     high = {r.high}, "\
-                    #       f"     low = {r.low}, "\
-                    #       f"     close = {r.close}, "\
-                    #       f"     diff = {r.diff}, "\
-                    #       f"     volume = {r.volume} "\
-                    #       f" WHERE code = '{code}' "\
-                    #       f" AND   date = '{r.date}' "\
-                    #       f" RETURNING * ) "\
-                    #       f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) "\
-                    #       f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
-                    #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
-                    cur.execute(sql)
-                    if not r.Index % 100:
-                        conn.commit()
-                conn.commit()
-                sl(__name__).get_logger().info('replace_price_naver : End update daily price #{:04d} {}:{}'.format(num+1, code, company))
-
-        except Exception as e:
-            conn.rollback()
-            sl(__name__).get_logger().info('replace_price_naver :' + str(e))
 
     def update_daily_price(self, pages_to_fetch):
         """네이버 금융에서 주식시세를 읽어 DB에 update"""
 
         sd = anlDataMng()
-        for idx, code in enumerate(self.codes):
-            df = sd.getDailyPriceNaver(code, self.codes[code], pages_to_fetch=pages_to_fetch)
+        mkdb = MarketDB()
+        for idx, r in self.codes.iterrows():
+            df = sd.getDailyPriceNaver(r.code, r.company, pages_to_fetch=pages_to_fetch)
             if df is None:
                 continue
 
-            self.replace_price_naver(df, idx, code, self.codes[code])
+            for idx, prc in df.iterrows():
+                mkdb.replace_dily_price(prc, idx, r.code, r.company)
+                sl(__name__).get_logger().info('update_daily_price : End update daily price #{:04d} {}:{}'.format(idx + 1, r.code, r.company))
 
-    def get_company_name(self, code):
-        """company_info 테이블로 부터 회사(법인)명을 가져온다"""
-        sql = f"SELECT company FROM company_info WHRER ={code}"
-        try:
-            conn = self.dbm.get_connection()
-            rs = pd.read_sql(sql, conn)
-        except Exception as e:
-            conn.rollback()
-            sl(__name__).get_logger().info('get_company_name : ', e)
-            return None
 
-        return rs[0]
-
-    ## 초기 company 별 주가자료를 모두 가져 오도록 한다.
-    def update_all_price_company(self, code):
-        sd = anlDataMng()
-        com_name = self.get_company_name(self, code)
-        df = sd.getDailyPriceNaver(code, com_name, 0)
-        if df is None:
-            return None
-
-        self.replace_price_naver(df, 0, code, com_name)
-        return df.length()
+    # ## 초기 company 별 주가자료를 모두 가져 오도록 한다.
+    # def update_all_price_company(self, code):
+    #     sd = anlDataMng()
+    #     mkdb = MarketDB()
+    #     com_name = mkdb.get_company_name(code)
+    #     df = sd.getDailyPriceNaver(code, com_name, 0)
+    #     if df is None:
+    #         return None
+    #
+    #     for idx, prc in df.iterrows():
+    #         mkdb.replace_dily_price(prc, code, com_name)
+    #         sl(__name__).get_logger().info(
+    #             'update_all_price_company : End update daily price #{:04d} {}:{}'.format(idx + 1, r.code, r.company))
+    #     return df.length()
 
     def execute_daily(self):
         """실행 즉시 및 매일 오후 5시에 daily_price 테이블 update"""

@@ -15,48 +15,98 @@ class MarketDB:
     #     """소멸자 : DB 연결 해제"""
     #     self.conn.close()
 
-    def update_comp_info(self, krx):
-        today = datetime.today().strftime('%Y-%m-%d')
+    def get_company_name(self, code):
+        """company_info 테이블로 부터 회사(법인)명을 가져온다"""
+        sql = f"SELECT company FROM company_info WHRER ={code}"
 
-        try:
-            conn = self.dbm.get_connection()
-            with conn.cursor() as cur:
-                """가장 최근 company_info update 일자"""
-                sql = "SELECT max(last_update) FROM company_info"
-                cur.execute(sql)
-                rs = cur.fetchone()
+        df = self.dbm.excute_alconn('get_company_name', sql)
+        return df.iloc[0, 0]
 
-                if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
-                    sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
-                    for idx, r in krx.iterrows():
+    def replace_dily_price(self, row, code, company):
+        """네이버 금융에서 주식시세를 읽어 DB에 replace"""
+        # try:
+        #     conn = self.dbm.get_connection()
+        #     with conn.cursor() as cur:
+        #         for r in df.itertuples():
+        dbNm = self.dbm.get_db_nm()
+        sl(__name__).get_logger().info('replace_price_naver: code:{}, name:{}, price_date{}'.format(code, company, row.date))
+        if dbNm == 'mysql':
+            # MySQL용 Merge
+            sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
+                  f"VALUES ('{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.diff}, {row.volume}) " \
+                  f"ON DUPLICATE KEY " \
+                  f"UPDATE open = '{row.open}', high = '{row.high}', low = '{row.low}', close = '{row.close}', diff = '{row.diff}', volume = '{row.volume}'; "
+        elif dbNm == 'postgresql':
+            # postgreSQL 용 Merge 문
+            sql = f"WITH upsert AS "\
+                  f"(UPDATE daily_price "\
+                  f" SET open = {row.open}, "\
+                  f"     high = {row.high}, "\
+                  f"     low = {row.low}, "\
+                  f"     close = {row.close}, "\
+                  f"     diff = {row.diff}, "\
+                  f"     volume = {row.volume} "\
+                  f" WHERE code = '{code}' "\
+                  f" AND   date = '{row.date}' "\
+                  f" RETURNING * ) "\
+                  f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) "\
+                  f"SELECT '{code}', '{row.date}', {row.open}, {row.high}, {row.low}, {row.close}, {row.diff}, {row.volume} " \
+                  f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+        #             cur.execute(sql)
+        #             if not r.Index % 100:
+        #                 conn.commit()
+        #         conn.commit()
+        #
+        #
+        # except Exception as e:
+        #     conn.rollback()
+        #     sl(__name__).get_logger().info('replace_price_naver :' + str(e))
+        ret = self.dbm.excuteSQL('replace_dily_price', sql, True)
 
-                        # MySQL용 Merge
-                        sql = f"INSERT INTO company_info (code, company, last_update) " \
-                              f"VALUES ('{r.code}', '{r.company}', '{today}') " \
-                              f"ON DUPLICATE KEY " \
-                              f"UPDATE company = '{r.company}', last_update = '{today}'; "
+        return ret
 
+    def get_laste_upate_comp(self):
+        sql = "SELECT max(last_update) FROM company_info"
+        df = self.dbm.excute_alconn('get_laste_upate_comp', sql)
+        return df.iloc[0, 0]
 
-                        # postgreSQL 용 Merge 문
-                        # sql = f"WITH upsert AS "\
-                        #       f"(UPDATE company_info "\
-                        #       f" SET company = '{company}', "\
-                        #       f"     last_update = '{today}' "\
-                        #       f" WHERE code = '{code}' "\
-                        #       f" RETURNING * ) "\
-                        #       f"INSERT INTO company_info (code, company, last_update) "\
-                        #       f"SELECT '{code}', '{company}', '{today}' " \
-                        #       f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+    def update_comp_info(self, krx, today):
+        # today = datetime.today().strftime('%Y-%m-%d')
 
+        # try:
+        #     conn = self.dbm.get_connection()
+        #     with conn.cursor() as cur:
+        #         """가장 최근 company_info update 일자"""
+        #         sql = "SELECT max(last_update) FROM company_info"
+        #         cur.execute(sql)
+        #         rs = cur.fetchone()
 
-                        cur.execute(sql)
-                        self.codes[code] = company
-                    conn.commit()
-                    sl(__name__).get_logger().info('update_comp_info : End INSERT company information')
+                # if rs[0] == None or rs[0].strftime('%Y-%m-%d') < today:
+        sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
 
-        except Exception as e:
-            conn.rollback()
-            sl(__name__).get_logger().info('update_comp_info : ' +  str(e))
+        dbNm = self.dbm.get_db_nm()
+        # for idx, r in krx.iterrows():
+        if dbNm == 'mysql':
+            # MySQL용 Merge
+            sql = f"INSERT INTO company_info (code, company, last_update) " \
+                  f"VALUES ('{krx.code}', '{krx.company}', '{today}') " \
+                  f"ON DUPLICATE KEY " \
+                  f"UPDATE company = '{krx.company}', last_update = '{today}'; "
+        elif dbNm == 'postgresql':
+            # postgreSQL 용 Merge 문
+            sql = f"WITH upsert AS "\
+                  f"(UPDATE company_info "\
+                  f" SET company = '{krx.company}', "\
+                  f"     last_update = '{today}' "\
+                  f" WHERE code = '{krx.code}' "\
+                  f" RETURNING * ) "\
+                  f"INSERT INTO company_info (code, company, last_update) "\
+                  f"SELECT '{krx.code}', '{krx.company}', '{today}' " \
+                  f"WHERE NOT EXISTS (SELECT * FROM upsert);"
+
+        ret = self.dbm.excuteSQL('update_comp_info', sql, True)
+
+        return ret
 
 
     def get_comp_info(self, item_code=None, start=0, ret_items=0):
@@ -81,13 +131,17 @@ class MarketDB:
         return df.iloc[0, 0]
 
     def get_invest_items(self, user_id=None, start=0, ret_items=0):
+        dbNm = self.dbm.get_db_nm()
         if not user_id is None:
             sql = f"SELECT code, company FROM invest_items WHERE user_id = '{user_id}'"
         else:
             if ret_items==0:
                 sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company"
             else:
-                sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start}, {ret_items}"
+                if dbNm == 'mysql':
+                    sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start}, {ret_items}"
+                elif dbNm == 'postgresql':
+                    sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start} OFFSET = {ret_items}"
 
         df = self.dbm.excute_alconn('get_invest_items', sql)
 
@@ -147,6 +201,7 @@ class MarketDB:
 
     def update_daily_price(self, start_date, items):
         sd = anlDataMng()
+        dbNm = self.dbm.get_db_nm()
         for item in items:
             code, company = item.split()
             df = sd.getDailyPriceNaver(code, company, start_date=start_date)
@@ -155,11 +210,22 @@ class MarketDB:
                 continue
 
             for r in df.itertuples():
-                # MySQL용 Merge
-                sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
-                      f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
-                      f"ON DUPLICATE KEY " \
-                      f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
+                if dbNm == 'mysql':
+                    # MySQL용 Merge
+                    sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
+                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume}) " \
+                          f"ON DUPLICATE KEY " \
+                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}'; "
+                elif dbNm == 'postgresql':
+                    # postgreSQL 용 Merge 문
+                    sql = f"WITH upsert AS "\
+                          f"(UPDATE daily_price "\
+                          f" SET open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.diff}', volume = '{r.volume}' "\
+                          f" WHERE code = '{code}', date = '{r.date}' "\
+                          f" RETURNING * ) "\
+                          f"INSERT INTO daily_price (ccode, date, open, high, low, close, diff, volume) "\
+                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
+                          f"WHERE NOT EXISTS (SELECT * FROM upsert);"
 
                 # if r.Index % 200 == 0 or r == (len(df) - 1):
                 #     is_commit = True
@@ -174,6 +240,7 @@ class MarketDB:
     def update_item_fss(self, start_date, fs_sheet, items):
         sd = anlDataMng()
         cnt = 0
+        dbNm = self.dbm.get_db_nm()
         for item in items:
             code, company = item.split()
             start_date = start_date.replace('-', '')
@@ -206,11 +273,25 @@ class MarketDB:
                     for idx, r in amt_df.iterrows():
                         cnt += 1
 
-                        # MySQL용 Merge
-                        sql = f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
-                              f"VALUES ('{code}', '{fss_nm}', '{dt_st}', '{dt_en}','{r.account}', {r.amount}) " \
-                              f"ON DUPLICATE KEY UPDATE amount = {r.amount};"
-
+                        if dbNm == 'mysql':
+                            # MySQL용 Merge
+                            sql = f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
+                                  f"VALUES ('{code}', '{fss_nm}', '{dt_st}', '{dt_en}','{r.account}', {r.amount}) " \
+                                  f"ON DUPLICATE KEY UPDATE amount = {r.amount};"
+                        elif dbNm == 'postgresql':
+                            # postgreSQL 용 Merge 문
+                            sql = f"WITH upsert AS " \
+                                  f"(UPDATE item_fss " \
+                                  f" SET amount = {r.amount} " \
+                                  f" WHERE code = '{code}', " \
+                                  f" AND fss_code = '{fss_nm}', " \
+                                  f" AND date_start = '{dt_st}', " \
+                                  f" AND date_end = '{dt_en}', " \
+                                  f" AND account_nm = '{r.account}' "\
+                                  f" RETURNING * ) " \
+                                  f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
+                                  f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.diff}, {r.volume} " \
+                                  f"WHERE NOT EXISTS (SELECT * FROM upsert);"
                         # if cnt % 200 == 0 or idx == (len(amt_df)-1):
                         #     is_commit = True
                         # else:

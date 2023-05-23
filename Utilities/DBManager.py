@@ -1,5 +1,5 @@
-import psycopg2 as dbl
-# import MySQLdb as dbl
+# import psycopg2 as dbl
+import MySQLdb as dbl
 from Utilities.comUtilities import commonUtilities as cu
 from sqlalchemy import create_engine, text, engine
 import config.settings as conf
@@ -9,7 +9,6 @@ from Utilities.StockAnalExceptions import AnalException
 
 class DBman:
     def __init__(self):
-
         dbconf = conf.DATABASES['default']
         self.prop = cu('./config.ini')
         self.host = dbconf['HOST']   # self.prop.get_property('DB', 'hostname')
