@@ -110,11 +110,15 @@ class MarketDB:
 
 
     def get_comp_info(self, item_code=None, start=0, ret_items=0):
+        dbNm = self.dbm.get_db_nm()
         if item_code is None:
             if ret_items == 0:
                 sql = "SELECT * FROM company_info ORDER BY company "
             else:
-                sql = f"SELECT * FROM company_info ORDER BY company LIMIT {start}, {ret_items} "
+                if dbNm == 'mysql':
+                    sql = f"SELECT * FROM company_info ORDER BY company LIMIT {start}, {ret_items} "
+                elif dbNm == 'postgresql':
+                    sql = f"SELECT * FROM company_info ORDER BY company LIMIT {ret_items} OFFSET {start}  "
         else:
             sql = f"SELECT * FROM company_info WHERE code = '{item_code}'"
 
@@ -141,7 +145,7 @@ class MarketDB:
                 if dbNm == 'mysql':
                     sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start}, {ret_items}"
                 elif dbNm == 'postgresql':
-                    sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {start} OFFSET = {ret_items}"
+                    sql = f"SELECT DISTINCT code, company FROM invest_items ORDER BY company LIMIT {ret_items} OFFSET {start}"
 
         df = self.dbm.excute_alconn('get_invest_items', sql)
 
