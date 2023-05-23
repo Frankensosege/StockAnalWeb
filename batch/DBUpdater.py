@@ -2,16 +2,16 @@ from WebCrawler.StockData import anlDataMng
 import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
 from datetime import datetime
-from Utilities.DBManager import DBman
+# from Utilities.DBManager import DBman
 from Utilities.StockMarketDB import MarketDB
-from Utilities.comUtilities import commonUtilities
+from Utilities.comUtilities import get_property
 
 class DBUpdater:
     codes = pd.DataFrame()
     def __init__(self):
         """생성자 : DB 연결 및 종목코드 딕셔너리 생성"""
         # self.dbm = DBman()
-        self.cu = commonUtilities('./config.ini')
+        # self.cu = commonUtilities('./config.ini')
 
     def __del__(self):
         """소멸자 : DB 연결 해제"""
@@ -31,7 +31,7 @@ class DBUpdater:
         today = datetime.today().strftime('%Y-%m-%d')
         lst_dt = mkdb.get_laste_upate_comp()
 
-        """종목코드를 company_info 테이블에 업데이트한 후 딕셔너리에 저장"""
+        sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
         # krx = pd.DataFrame()
         # krx = sd.getItemList()
         self.codes = sd.getItemList()
@@ -95,8 +95,8 @@ class DBUpdater:
                 continue
 
             for idx, prc in df.iterrows():
-                mkdb.replace_dily_price(prc, idx, r.code, r.company)
-                sl(__name__).get_logger().info('update_daily_price : End update daily price #{:04d} {}:{}'.format(idx + 1, r.code, r.company))
+                mkdb.replace_daily_price(prc, r.code)
+        sl(__name__).get_logger().info('update_daily_price : End update daily price #{:04d} {}:{}'.format(idx + 1, r.code, r.company))
 
 
     # ## 초기 company 별 주가자료를 모두 가져 오도록 한다.
@@ -117,7 +117,7 @@ class DBUpdater:
     def execute_daily(self):
         """실행 즉시 및 매일 오후 5시에 daily_price 테이블 update"""
         # pages_to_fetch 가져올 일별 price(0 전체)
-        pages_to_fetch = self.cu.get_property('DPrice', 'pages_to_fetch')
+        pages_to_fetch = get_property('DPrice', 'pages_to_fetch')
         sl(__name__).get_logger().info('execute_daily : start-----')
         self.update_comp_info()
         self.update_daily_price(pages_to_fetch)

@@ -146,11 +146,11 @@
       var pagesDiv = $('#pages');
       pagesDiv.empty();
 
-      if (curr_page === 1) {
+      if (curr_page <= 2) {
         start_p = 1;
         end_p = 5;
       } else {
-        if (curr_page + 1 > totalPages) {
+        if (curr_page + 2 > totalPages) {
           start_p = totalPages - 4;
           end_p = totalPages;
         } else {

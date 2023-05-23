@@ -1,6 +1,6 @@
 # import psycopg2 as dbl
 import MySQLdb as dbl
-from Utilities.comUtilities import commonUtilities as cu
+from Utilities.comUtilities import get_property
 from sqlalchemy import create_engine, text, engine
 import config.settings as conf
 import pandas as pd
@@ -10,7 +10,7 @@ from Utilities.StockAnalExceptions import AnalException
 class DBman:
     def __init__(self):
         dbconf = conf.DATABASES['default']
-        self.prop = cu('./config.ini')
+        # self.prop = cu('./config.ini')
         self.host = dbconf['HOST']   # self.prop.get_property('DB', 'hostname')
         self.dbname = dbconf['NAME']   # self.prop.get_property('DB', 'dbname')
         self.user = dbconf['USER']   # self.prop.get_property('DB', 'username')
@@ -47,7 +47,7 @@ class DBman:
             return None
         return conn
 
-    def get_alchmy_con(self, mode):
+    def get_alchmy_con(self, mode="REPEATABLE READ"):
         db_pre = 'mysql+mysqldb'
         if self.dbNm == 'postgresql':
             db_pre = 'postgresql+psycopg2'
@@ -70,7 +70,7 @@ class DBman:
                 if iscommit:
                     conn.commit()
         except Exception as e:
-            print(e)
+            # print(e)
             # sl(__name__).get_logger().error(exec_name + str(e))
             return None
 
@@ -78,6 +78,7 @@ class DBman:
 
     def excute_alconn(self, exec_name, sql, alcon_parm='REPEATABLE READ'):
         try:
+            print(sql)
             al_conn = self.get_alchmy_con(alcon_parm)
             sql = self.get_alchemy_query(sql)
             with al_conn.begin() as al_conn:
@@ -90,6 +91,7 @@ class DBman:
 
     def excute_alcon_CUD(self, exec_name, sql):
         try:
+            print(sql)
             al_conn = self.get_alchmy_con("AUTOCOMMIT")
             sql = self.get_alchemy_query(sql)
             with al_conn.begin() as al_conn:

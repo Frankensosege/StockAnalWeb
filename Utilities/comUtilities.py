@@ -1,4 +1,22 @@
 import json
+import time
+import datetime
+import numpy as np
+
+# 날짜, 시간 관련 문자열 형식
+FORMAT_DATE = "%Y%m%d"
+FORMAT_DATETIME = "%Y%m%d%H%M%S"
+propFile = './config.ini'
+
+def get_property(propSection, propName):
+    #property 파일에서 property 읽어오기
+    import configparser as parser
+
+    properties = parser.ConfigParser()
+    properties.read(propFile, "utf-8")
+    propertiesSection = properties[propSection]
+
+    return propertiesSection[propName]
 
 def get_menu_list(auth):
     menu_list = {}
@@ -57,16 +75,18 @@ def get_menu_list(auth):
 
     return json.dumps(menu_list)
 
-class commonUtilities:
-    def __init__(self, propFile):
-        self.propFile = propFile
+def get_today_str():
+    today = datetime.datetime.combine(
+        datetime.date.today(), datetime.datetime.min.time())
+    today_str = today.strftime('%Y%m%d')
+    return today_str
 
-    def get_property(self, propSection, propName):
-        #property 파일에서 property 읽어오기
-        import configparser as parser
 
-        properties = parser.ConfigParser()
-        properties.read(self.propFile, "utf-8")
-        propertiesSection = properties[propSection]
+def get_time_str():
+    return datetime.datetime.fromtimestamp(
+        int(time.time())).strftime(FORMAT_DATETIME)
 
-        return propertiesSection[propName]
+
+def sigmoid(x):
+    x = max(min(x, 10), -10)
+    return 1. / (1. + np.exp(-x))
