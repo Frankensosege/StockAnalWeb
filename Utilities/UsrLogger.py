@@ -25,7 +25,7 @@ class stockLogger():
                                                                          encoding='utf-8')
             timedfilehandler.setFormatter(formatter)
             timedfilehandler.suffix = "%Y%m%d"
-aa
+
             console = logging.StreamHandler()
             console.setLevel(logging.INFO)
 
