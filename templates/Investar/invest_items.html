@@ -123,7 +123,7 @@
         success: function(data) {
           // Display the items in the left list
           data.forEach(function(item) {
-            itemtext = item.code + '  ' + item.company;
+            itemtext = item.code + ': ' + item.company;
             var listItem = $('<li>').addClass('list-item').text(itemtext);
             listItem.click(function() {
               for (var i=0; i<selitem.length; i ++) {
@@ -201,7 +201,7 @@
         success: function(data) {
           // Display the items in the left list
           data.forEach(function(item) {
-            var listItem = $('<li>').addClass('list-item').text(item.code + '  ' + item.company);
+            var listItem = $('<li>').addClass('list-item').text(item.code + ': ' + item.company);
             listItem.click(function() {
               selectItem(this);
             });
@@ -259,7 +259,7 @@
 
     // Save selected invest items by user
     function saveitems() {
-      if (selitem.length <= 0) return;
+      //if (selitem.length <= 0) return;
       var Json = JSON.stringify(selitem);
       var csrftoken = getCookie('csrftoken');
       $.ajax({
@@ -267,7 +267,7 @@
         type: 'POST',
         data: Json,
         success: function(data) {
-          alert(data.result);
+          alert('저장이 완료되었습니다.');
         }
       });
     }

@@ -1,3 +1,6 @@
+import numpy as np
+from Utilities.comUtilities import sigmoid
+
 class Environment:
     PRICE_IDX = 4  # 종가의 위치
 
@@ -23,8 +26,6 @@ class Environment:
         return None
 
 
-import numpy as np
-from Utilities.comUtilities import sigmoid
 class Agent:
     # 에이전트 상태가 구성하는 값 개수
     # 주식 보유 비율, 손익률, 주당 매수 단가 대비 주가 등락률

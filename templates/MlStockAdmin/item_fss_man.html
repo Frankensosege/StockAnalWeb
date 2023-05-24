@@ -201,7 +201,7 @@
         success: function(data) {
           // Display the items in the left list
           data.forEach(function(item) {
-            var listItem = $('<li>').addClass('list-item').text(item.code + '  ' + item.company);
+            var listItem = $('<li>').addClass('list-item').text(item.code + ': ' + item.company);
             listItem.click(function() {
               selectItem(this);
             });
@@ -279,7 +279,7 @@
         type: 'POST',
         data: Json,
         success: function(data) {
-          alert(data.result);
+          alert('저장이 완료되었습니다.');
         }
       });
     }
