@@ -54,14 +54,14 @@ def get_paged_item(request):
 def save_investitem(request):
     cur_user = request.user
     if request.method == 'POST':
-        user_id = request.session.get('id')
+        # user_id = request.session.get('id')
         # if user_id is None or user_id == '':
         if not cur_user.is_authenticated:
             return render(request, 'common_ui/stock_man_index.html')
 
         invitems = json.loads(request.body)
 
-        ret = MarketDB().create_invitem_list(user_id, invitems)
+        ret = MarketDB().create_invitem_list(cur_user.id, invitems)
         if ret is not None:
             contJson = {'result': ret}
         else:

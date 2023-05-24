@@ -39,6 +39,21 @@ CREATE TABLE `item_fss` (
   PRIMARY KEY (`code`,`fss_code`, `date_start`, `date_end`, `account_nm`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
+CREATE TABLE `anal_tools` (
+  `tool_id` INT NOT NULL AUTO_INCREMENT,
+  `tool_nm` VARCHAR(100) NULL,
+  `too_method` VARCHAR(100) NULL,
+  `img_prefix` VARCHAR(45) NULL,
+  PRIMARY KEY (`tool_id`),
+  UNIQUE INDEX `tool_id_UNIQUE` (`tool_id` ASC) VISIBLE);
+
+CREATE TABLE `user_tools` (
+  `tool_id` INT NOT NULL,
+  `user_id` bigint NOT NULL,
+  PRIMARY KEY (`tool_id`, `user_id`),
+  UNIQUE INDEX `tool_id_UNIQUE` (`tool_id`, `user_id` ASC) VISIBLE);
+
+
 pip install mplfinance
 import psycopg2 dbl -> import MySQLdb as dbl
 pip3 install lxml

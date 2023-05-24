@@ -3,7 +3,7 @@ from Utilities.UsrLogger import stockLogger as sl
 from Utilities.DBManager import DBman
 from datetime import datetime, timedelta
 from Utilities.StockAnalExceptions import AnalException
-from WebCrawler.StockData import anlDataMng
+from WebCrawler.StockData import getDailyPriceNaver, get_dart_fss
 
 class MarketDB:
     def __init__(self):
@@ -191,9 +191,12 @@ class MarketDB:
         ret = self.dbm.excute_alcon_CUD('create_invitem_list(delete)', sql)
 
         if ret is not None:
+            if len(items) <= 0:
+                return None
+
             for item in items:
-                code, company = item.split()
-                sql = f'INSERT INTO invest_items (user_id, code, company) VALUES ("{user_id}", "{code}", "{company}")'
+                code, company = item.split(':')
+                sql = f'INSERT INTO invest_items (user_id, code, company) VALUES ("{user_id}", "{code.strip()}", "{company.strip()}")'
                 ret = self.dbm.excute_alcon_CUD('create_invitem_list(insert)', sql)
                 if ret is None:
                     return "투자종목 저장에 실패 했습니다."
@@ -202,11 +205,11 @@ class MarketDB:
         return None
 
     def update_daily_price(self, start_date, items):
-        sd = anlDataMng()
+        # sd = anlDataMng()
         dbNm = self.dbm.get_db_nm()
         for item in items:
-            code, company = item.split()
-            df = sd.getDailyPriceNaver(code, company, start_date=start_date)
+            code, company = item.split(':')
+            df = getDailyPriceNaver(code.strip(), company.strip(), start_date=start_date)
 
             if df is None:
                 continue
@@ -240,13 +243,12 @@ class MarketDB:
         return True
 
     def update_item_fss(self, start_date, fs_sheet, items):
-        sd = anlDataMng()
         cnt = 0
         dbNm = self.dbm.get_db_nm()
         for item in items:
-            code, company = item.split()
+            code, company = item.split(':')
             start_date = start_date.replace('-', '')
-            dict = sd.get_dart_fss(code, start_date, fs_sheet)
+            dict = get_dart_fss(code, start_date, fs_sheet)
 
             if dict is None:
                 continue

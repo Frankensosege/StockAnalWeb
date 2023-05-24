@@ -1,4 +1,4 @@
-from WebCrawler.StockData import anlDataMng
+from WebCrawler.StockData import getItemList, getDailyPriceNaver
 import pandas as pd
 from Utilities.UsrLogger import stockLogger as sl
 from datetime import datetime
@@ -20,7 +20,7 @@ class DBUpdater:
 
     def update_comp_info(self):
         # sl(__name__).get_logger().info('update_comp_info : DB에 저장된 company_info의 종목 정보를 딕셔너리에 저장')
-        sd = anlDataMng()
+        # sd = anlDataMng()
 
         mkdb = MarketDB()
         # self.codes = mkdb.get_comp_info()
@@ -34,7 +34,7 @@ class DBUpdater:
         sl(__name__).get_logger().info('update_comp_info : Start INSERT company information 가장 최근 company_info update 일자가 오늘 보다 작거나 처음 수행한 경우')
         # krx = pd.DataFrame()
         # krx = sd.getItemList()
-        self.codes = sd.getItemList()
+        self.codes = getItemList()
         if lst_dt == None or lst_dt.strftime('%Y-%m-%d') < today:
             for idx, r in self.codes.iterrows():
                 mkdb.update_comp_info(r, today)
@@ -87,10 +87,10 @@ class DBUpdater:
     def update_daily_price(self, pages_to_fetch):
         """네이버 금융에서 주식시세를 읽어 DB에 update"""
 
-        sd = anlDataMng()
+        # sd = anlDataMng()
         mkdb = MarketDB()
         for idx, r in self.codes.iterrows():
-            df = sd.getDailyPriceNaver(r.code, r.company, pages_to_fetch=pages_to_fetch)
+            df = getDailyPriceNaver(r.code, r.company, pages_to_fetch=pages_to_fetch)
             if df is None:
                 continue
 
