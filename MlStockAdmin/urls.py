@@ -10,5 +10,7 @@ urlpatterns = [
     path('save_item_price/', views.save_item_price, name='save_item_price'),
     path('item_admin/', views.item_admin, name='item_admin'),
     path('item_fss/', views.item_fss, name='item_fss'),
+    path('item_learn/', views.item_learn, name='item_learn'),
+    path('save_item_learn/', views.save_item_learn, name='save_item_learn'),
     path('save_item_fss/', views.save_item_fss, name='save_item_fss'),
 ]

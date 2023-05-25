@@ -36,8 +36,8 @@ def get_menu_list(auth):
                  "url": "/stkadmin/item_admin/",
                  "submenu": []
                  },
-                {"name": "모델관리",
-                 "url": "",
+                {"name": "학습관리",
+                 "url": "/stkadmin/item_learn/",
                  "submenu": []
                  },
                 {"name": "재무제표",

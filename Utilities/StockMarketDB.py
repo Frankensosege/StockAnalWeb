@@ -165,7 +165,7 @@ class MarketDB:
         if item_code is None:
             raise AnalException('종목 코드는 필수 입니다.')
 
-        sql = f"SELECT COM.code, COM.company, PRC.date, PRC.open, PRC.high, PRC.low, PRC.close, PRC.diff, PRC.volume "\
+        sql = f"SELECT COM.code, COM.company, PRC.date, PRC.open, PRC.high, PRC.low, PRC.close, PRC.diff, PRC.volume, PRC.gov_trade, PRC.for_trade "\
               f"FROM company_info COM, daily_price PRC"\
               f"WHERE COM.code = PRC.code" \
               f"AND COM.code = '{item_code}' " \
@@ -217,19 +217,19 @@ class MarketDB:
             for r in df.itertuples():
                 if dbNm == 'mysql':
                     # MySQL용 Merge
-                    sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume) " \
-                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume}) " \
+                    sql = f"INSERT INTO daily_price (code, date, open, high, low, close, diff, volume, gov_trade, for_trade) " \
+                          f"VALUES ('{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume}, {r.gov_trade}, {r.for_trade}) " \
                           f"ON DUPLICATE KEY " \
-                          f"UPDATE open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.differ}', volume = '{r.volume}'; "
+                          f"UPDATE open = '{r.open}', high = {r.high}, low = {r.low}, close = {r.close}, diff = {r.differ}, volume = {r.volume}, gov_trade = {r.gov_trade}, for_trade = {r.for_trade}; "
                 elif dbNm == 'postgresql':
                     # postgreSQL 용 Merge 문
                     sql = f"WITH upsert AS "\
                           f"(UPDATE daily_price "\
-                          f" SET open = '{r.open}', high = '{r.high}', low = '{r.low}', close = '{r.close}', diff = '{r.differ}', volume = '{r.volume}' "\
-                          f" WHERE code = '{code}', date = '{r.date}' "\
+                          f" SET open = '{r.open}', high = {r.high}, low = {r.low}, close = {r.close}, diff = {r.differ}, volume = {r.volume}, gov_trade = {r.gov_trade}, for_trade = {r.for_trade} "\
+                          f" WHERE code = '{code}' AND date = '{r.date}' "\
                           f" RETURNING * ) "\
-                          f"INSERT INTO daily_price (ccode, date, open, high, low, close, diff, volume) "\
-                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume} " \
+                          f"INSERT INTO daily_price (ccode, date, open, high, low, close, diff, volume, gov_trade, for_trade) "\
+                          f"SELECT '{code}', '{r.date}', {r.open}, {r.high}, {r.low}, {r.close}, {r.differ}, {r.volume}, {r.gov_trade}, {r.for_trade}) " \
                           f"WHERE NOT EXISTS (SELECT * FROM upsert);"
 
                 # if r.Index % 200 == 0 or r == (len(df) - 1):
@@ -287,10 +287,10 @@ class MarketDB:
                             sql = f"WITH upsert AS " \
                                   f"(UPDATE item_fss " \
                                   f" SET amount = {r.amount} " \
-                                  f" WHERE code = '{code}', " \
-                                  f" AND fss_code = '{fss_nm}', " \
-                                  f" AND date_start = '{dt_st}', " \
-                                  f" AND date_end = '{dt_en}', " \
+                                  f" WHERE code = '{code}' " \
+                                  f" AND fss_code = '{fss_nm}' " \
+                                  f" AND date_start = '{dt_st}' " \
+                                  f" AND date_end = '{dt_en}' " \
                                   f" AND account_nm = '{r.account}' "\
                                   f" RETURNING * ) " \
                                   f"INSERT INTO item_fss (code, fss_code, date_start, date_end, account_nm, amount) " \
@@ -302,6 +302,30 @@ class MarketDB:
                         #     is_commit = False
                         ret = self.dbm.excuteSQL('update_item_fss', sql, True)
 
+    def create_learn_schedule(self, start_date, end_date, items):
+        dbNm = self.dbm.get_db_nm()
+        for idx, item in items.iterrows():
+            code, company = item.split(':')
+            if dbNm == 'mysql':
+                # MySQL용 Merge
+                sql = f"INSERT INTO 'learning_items' (schedule_dt, item_code, start_dt, end_dt) " \
+                      f"VALUES (CURDATE(), '{code}', '{start_date}', '{end_date}') " \
+                      f"ON DUPLICATE KEY UPDATE start_dt = '{start_date}', end_dt = '{end_date}';"
+            elif dbNm == 'postgresql':
+                # postgreSQL 용 Merge 문
+                sql = f"WITH upsert AS " \
+                      f"(UPDATE item_fss " \
+                      f" SET amount = start_dt = '{start_date}', end_dt = '{end_date}' " \
+                      f" WHERE schedule_dt = CURDATE() " \
+                      f" AND item_code = '{code}' " \
+                      f" RETURNING * ) " \
+                      f"INSERT INTO item_fss (schedule_dt, item_code, start_dt, end_dt) " \
+                      f"SELECT current_date, '{code}', '{start_date}', '{end_date}' " \
+                      f"WHERE NOT EXISTS (SELECT * FROM upsert);"
 
 
+            ret = self.dbm.excuteSQL('create_learn_schedule', sql, True)
 
+            if ret is None:
+                return False
+        return True

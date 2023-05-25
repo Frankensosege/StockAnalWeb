@@ -6,19 +6,19 @@ CREATE TABLE IF NOT EXISTS company_info
     CONSTRAINT company_info_pkey PRIMARY KEY (code)
 )
 
-
-CREATE TABLE IF NOT EXISTS daily_price
-(
-    code character varying(20) NOT NULL,
-    date date NOT NULL,
-    open bigint,
-    high bigint,
-    low bigint,
-    close bigint,
-    diff bigint,
-    volume bigint,
-    CONSTRAINT daily_price_pkey PRIMARY KEY (code, date)
-)
+CREATE TABLE `daily_price` (
+  `code` varchar(20) NOT NULL,
+  `date` date NOT NULL,
+  `open` bigint DEFAULT NULL,
+  `high` bigint DEFAULT NULL,
+  `low` bigint DEFAULT NULL,
+  `close` bigint DEFAULT NULL,
+  `diff` bigint DEFAULT NULL,
+  `volume` bigint DEFAULT NULL,
+  `gov_trade` bigint DEFAULT NULL,
+  `for_trade` bigint DEFAULT NULL,
+  PRIMARY KEY (`code`,`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
 CREATE TABLE `invest_items` (
   `user_id` bigint NOT NULL,
@@ -52,6 +52,16 @@ CREATE TABLE `user_tools` (
   `user_id` bigint NOT NULL,
   PRIMARY KEY (`tool_id`, `user_id`),
   UNIQUE INDEX `tool_id_UNIQUE` (`tool_id`, `user_id` ASC) VISIBLE);
+
+
+CREATE TABLE `learning_items` (
+  `schedule_dt` date NOT NULL,
+  `item_code` varchar(20) NOT NULL,
+  `start_dt` date NOT NULL,
+  `end_dt` date NULL,
+  PRIMARY KEY (`schedule_dt`, `item_code`),
+  UNIQUE KEY `invest_items` (`schedule_dt`, `item_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
 
 pip install mplfinance

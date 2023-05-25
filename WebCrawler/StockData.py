@@ -42,6 +42,12 @@ def __getLastPageNaver(url):
     return s[-1]
 
 def getDailyPriceNaver(itemCode, company, pages_to_fetch=0, start_date=None):
+    # # 기관 외국인 전일비 거래증감량
+    # df_frgv_trade = for_gov_trading(itemCode, start_date=start_date)
+    # print(df_frgv_trade)
+    #
+    # return None
+
     #Naver 종목별 시세 페이지
     try:
         url = get_property('URLs', 'naverFinance')
@@ -83,11 +89,17 @@ def getDailyPriceNaver(itemCode, company, pages_to_fetch=0, start_date=None):
             print("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
             # self.logger.info("getDailyPriceNaver : Download {}:{} - Page {:04d} / {:04d}".format(itemCode, company, page, pages))
 
-        df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'differ', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume'})
+        # 기관 외국인 전일비 거래증감량
+        df_frgv_trade = for_gov_trading(itemCode, start_date=start_date)
+
+        df = pd.merge(left=df, right=df_frgv_trade, how="outer", on='날짜')
+
+        df = df.rename(columns={'날짜':'date', '종가':'close', '전일비':'differ', '시가':'open', '고가':'high', '저가':'low', '거래량':'volume', '기관':'gov_trade', '외국인':'for_trade'})
         df['date'] = df['date'].replace('.', '-')
+        print(df.columns)
         df = df.dropna()
-        df[['close', 'differ', 'open', 'high', 'low', 'volume']] = df[['close', 'differ', 'open', 'high', 'low', 'volume']].astype(int)
-        df = df[['date', 'open', 'high', 'low', 'close', 'differ', 'volume']]
+        df[['close', 'differ', 'open', 'high', 'low', 'volume', 'gov_trade', 'for_trade']] = df[['close', 'differ', 'open', 'high', 'low', 'volume', 'gov_trade', 'for_trade']].astype(int)
+        df = df[['date', 'open', 'high', 'low', 'close', 'differ', 'volume', 'gov_trade', 'for_trade']]
     except Exception as e:
         print(e)
         sl(__name__).get_logger().error("getDailyPriceNaver : " + str(e))
@@ -158,4 +170,56 @@ def get_dart_fss(item_code, bgn_de, report, report_tp=['quarter']):
     #     data_cf = data_dict['data_cf']
     # except KeyError as e:  ## 오류가 나는 부분은 어디인지 전송
     #     print("Error:", e, "is missing in data_dict.")
+
+def for_gov_trading(itemCode, start_date=None):
+    url = get_property('URLs', 'naverFinance')
+    url = '{}{}?code={}'.format(url, get_property('URLs', 'naverFrGvTrade'), itemCode)
+    page = 0
+
+    col_list = []
+    eod=False
+    while True:
+        page += 1
+        tradeUrl = '{}&page={}'.format(url, page)
+        print('기관, 외국인 보유변화 page: ', page)
+
+        response = requests.get(tradeUrl, headers={'User-agent': 'Mozilla/5.0'})
+        if response.status_code!=200:
+            raise Exception("1. 외국인 기관 거래량을 가져오지 못했습니다.")
+        html_content = response.text
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+        temp = soup.find_all('table', class_='type2')
+        if (len(temp)<1):
+            break
+
+        if start_date is not None:
+            str_dt = datetime.strptime(start_date, '%Y-%m-%d')
+        rows = temp[1].find_all('tr')
+
+        for idx in range(3, len(rows)):
+            cols = rows[idx].find_all('td')
+
+            if len(cols) >= 8:
+                try:
+                    trade_date = datetime.strptime(cols[0].get_text().strip(), '%Y.%m.%d')
+                except Exception as e:
+                    print(str(e))
+                    eod = True
+                    break
+
+                if str_dt > trade_date:
+                    eod = True
+                    break
+
+                col_list.append([cols[0].get_text().strip(), cols[5].get_text().strip(), cols[6].get_text().strip()])
+        if eod:
+            break
+    df = pd.DataFrame(col_list, columns=['날짜', '기관', '외국인'])
+    df['기관'] = df['기관'].str.replace(',', '')
+    df['외국인'] = df['외국인'].str.replace(',', '')
+    # df['기관'] = df['기관'].astype('int64')
+    # df['외국인'] = df['외국인'].astype('int64')
+
+    return df
 
