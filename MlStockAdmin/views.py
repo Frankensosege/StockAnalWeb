@@ -150,13 +150,16 @@ def item_learn_model(request):
         end_date = invitems['end_date']
         items = invitems['item_list']
 
+        ret_loss=''
         for item in items:
             code, company = item.split(':')
-            model = MLStockRNN(code)
 
+            ret_loss += item + '--> '
+            model = MLStockRNN(code)
             loss = model.train_model(datetime.strptime(start_date, "%Y-%m-%d").date(), datetime.strptime(end_date, "%Y-%m-%d").date())
-            print(loss)
-        contJson = {'result': ''}
+            ret_loss += str(loss) + '\n'
+        print(ret_loss)
+        contJson = {'result': ret_loss}
     else:
         error = '요청경로가 올바르지 않습니다.'
         return JsonResponse({'error': error})
