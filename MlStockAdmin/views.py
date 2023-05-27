@@ -2,6 +2,8 @@ import json
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 from Utilities.StockMarketDB import MarketDB
+from Utilities.TrainModel import MLStockRNN
+from datetime import datetime
 
 # Create your views here.
 def item_admin(request):
@@ -48,7 +50,7 @@ def save_item_price(request):
         if len(items) <= 0:
             items_df = prepSQL.get_invest_items(user_id=None, start=0, ret_items=0)
             for r in items_df.itertuples():
-                items.append(r[1] + ' ' + r[2])
+                items.append(r[1] + ': ' + r[2])
 
         ret =prepSQL.update_daily_price(start_date, items)
 
@@ -122,11 +124,11 @@ def save_item_learn(request):
         if len(items) <= 0:
             items_df = prepSQL.get_invest_items(user_id=None, start=0, ret_items=0)
             for r in items_df.itertuples():
-                items.append(r[1] + ' ' + r[2])
+                items.append(r[1] + ': ' + r[2])
 
         ret = prepSQL.create_learn_schedule(start_date, end_date, items)
 
-        if ret is not None:
+        if not ret:
             contJson = {'result': ret}
         else:
             contJson = {'result': 'success'}
@@ -135,4 +137,68 @@ def save_item_learn(request):
         return JsonResponse({'error': error})
 
     return HttpResponse(contJson, content_type="application/json")
+
+def item_learn_model(request):
+    cur_user = request.user
+    if request.method == 'POST':
+        if not cur_user.is_authenticated:
+            return render(request, 'common_ui/stock_man_index.html')
+
+        invitems = json.loads(request.body)
+
+        start_date = invitems['start_date']
+        end_date = invitems['end_date']
+        items = invitems['item_list']
+
+        for item in items:
+            code, company = item.split(':')
+            model = MLStockRNN(code)
+
+            loss = model.train_model(datetime.strptime(start_date, "%Y-%m-%d").date(), datetime.strptime(end_date, "%Y-%m-%d").date())
+            print(loss)
+        contJson = {'result': ''}
+    else:
+        error = '요청경로가 올바르지 않습니다.'
+        return JsonResponse({'error': error})
+
+    return JsonResponse(contJson, content_type="application/json")
+
+def item_prediction(request):
+    decision = ['매수', '매도', '관망']
+    cur_user = request.user
+    if request.method == 'POST':
+        if not cur_user.is_authenticated:
+            return render(request, 'common_ui/stock_man_index.html')
+
+        invitems = json.loads(request.body)
+
+        items = invitems['item_list']
+
+        ret_str = ''
+        for item in items:
+            code, company = item.split(':')
+            model = MLStockRNN(code)
+            ret_str += item + '\n'
+
+            pred = model.predict()
+            for idx, prd in enumerate(pred[0]):
+                prd_str = "{0:.2f}%".format(prd * 100)
+                ret_str += '\t' + decision[idx] + ' : ' + prd_str + '\n'
+
+        #     pred_list = {}
+        #     item_pred['company'] = company.strip()
+        #     for idx, prd in enumerate(pred[0]):
+        #         prd_str = "{0:.2f}%".format(prd * 100)
+        #         pred_list.update({decision[idx]:prd_str})
+        #
+        #     item_pred["pred"] = pred_list
+        #
+        contJson = {'result': ret_str}
+
+        print(contJson)
+    else:
+        error = '요청경로가 올바르지 않습니다.'
+        return JsonResponse({'error': error})
+
+    return JsonResponse(contJson, content_type="application/json")
 

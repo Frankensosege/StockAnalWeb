@@ -104,6 +104,12 @@
       <div>
         <button onclick="saveitems()">학습계획저장</button>
       </div>
+      <div>
+        <button onclick="learn_model()">학습시작</button>
+      </div>
+      <div>
+        <button onclick="predict()">예측</button>
+      </div>
     </div>
   </div>
 
@@ -265,8 +271,11 @@
       if (end_date==undefined || end_date=='') {
         end_date = '9999-12-31'
       }
-      if (Date(start_date)>=Date(end_date)) {
+      var sdt = new Date(start_date);
+      var edt = new Date(end_date);
+      if (sdt>=edt) {
         alert('From 날짜가 To 날짜보다 클 수 없습니다.');
+        return false;
       }
 
       var save_json = {'start_date': start_date, 'end_date': end_date, 'item_list': selitem};
@@ -282,6 +291,70 @@
       });
     }
 
+    function learn_model() {
+      var start_date = $('#date_from').val();
+      var end_date = $('#date_to').val();
+
+      if (start_date=="") {
+        alert('시작일자는 필수 입니다.');
+        return false;
+      }
+
+      if (end_date==undefined || end_date=='') {
+        end_date = '9999-12-31'
+      }
+      var sdt = new Date(start_date);
+      var edt = new Date(end_date);
+      if (sdt>=edt) {
+        alert('From 날짜가 To 날짜보다 클 수 없습니다.');
+        return false;
+      }
+
+      if (selitem.length<=0) {
+        alert('학습시킬 종목을 선택해 주세요.');
+        return false;
+
+      }
+
+      var save_json = {'start_date': start_date, 'end_date': end_date, 'item_list': selitem};
+      var Json = JSON.stringify(save_json);
+      var csrftoken = getCookie('csrftoken');
+      $.ajax({
+        url: "{% url 'stkadmin:item_learn_model' %}",
+        type: 'POST',
+        data: Json,
+        success: function(data) {
+          alert('학습이 완료되었습니다.');
+        }
+      });
+    }
+
+    function predict() {
+      if (selitem.length<=0) {
+        alert('예측할 종목을 선택해 주세요.');
+        return false;
+
+      }
+
+      var save_json = {'item_list': selitem};
+      var Json = JSON.stringify(save_json);
+      var csrftoken = getCookie('csrftoken');
+      $.ajax({
+        url: "{% url 'stkadmin:item_prediction' %}",
+        type: 'POST',
+        data: Json,
+        success: function(data) {
+
+          alert(data.result);
+
+//          console.log(data);
+//            $.each(data, function (i, item) {  //each(매개변수, 함수)
+//                $('#result').append(`<h3>${item.title}</h3><p>${item.body}</p>`)
+//            });
+
+        }
+      });
+    }
 
     $(function() {
         $(".datePicker").datepicker({

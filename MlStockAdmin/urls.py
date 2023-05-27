@@ -13,4 +13,6 @@ urlpatterns = [
     path('item_learn/', views.item_learn, name='item_learn'),
     path('save_item_learn/', views.save_item_learn, name='save_item_learn'),
     path('save_item_fss/', views.save_item_fss, name='save_item_fss'),
+    path('item_learn_model/', views.item_learn_model, name='item_learn_model'),
+    path('item_prediction/', views.item_prediction, name='item_prediction'),
 ]

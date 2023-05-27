@@ -304,17 +304,18 @@ class MarketDB:
 
     def create_learn_schedule(self, start_date, end_date, items):
         dbNm = self.dbm.get_db_nm()
-        for idx, item in items.iterrows():
+        for item in items:
             code, company = item.split(':')
+            print(code)
             if dbNm == 'mysql':
                 # MySQL용 Merge
-                sql = f"INSERT INTO 'learning_items' (schedule_dt, item_code, start_dt, end_dt) " \
+                sql = f"INSERT INTO learning_items (schedule_dt, item_code, start_dt, end_dt) " \
                       f"VALUES (CURDATE(), '{code}', '{start_date}', '{end_date}') " \
                       f"ON DUPLICATE KEY UPDATE start_dt = '{start_date}', end_dt = '{end_date}';"
             elif dbNm == 'postgresql':
                 # postgreSQL 용 Merge 문
                 sql = f"WITH upsert AS " \
-                      f"(UPDATE item_fss " \
+                      f"(UPDATE learning_items " \
                       f" SET amount = start_dt = '{start_date}', end_dt = '{end_date}' " \
                       f" WHERE schedule_dt = CURDATE() " \
                       f" AND item_code = '{code}' " \

@@ -70,7 +70,7 @@ class DBman:
                 if iscommit:
                     conn.commit()
         except Exception as e:
-            # print(e)
+            print(e)
             # sl(__name__).get_logger().error(exec_name + str(e))
             return None
 
