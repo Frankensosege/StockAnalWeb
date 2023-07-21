@@ -1,0 +1,381 @@
+{% extends "base_stockMan.html" %}
+
+{% block lik %}
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css">
+  <script src="http://code.jquery.com/ui/1.8.18/jquery-ui.min.js"></script>
+{% endblock %}
+
+{% block style %}
+  <style>
+    .container {
+      display: flex;
+    }
+    .list {
+      width: 280px;
+      margin-right: 50px;
+    }
+    .list-item {
+      cursor: pointer;
+    }
+    .page-link {
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .active-page {
+      font-weight: bold;
+    }
+    .active,
+    li:hover {
+        background-color: red;
+    }
+    .row {
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
+  </style>
+{% endblock %}
+
+{% block script %}
+  <script>
+   // using jQuery
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = jQuery.trim(cookies[i]);
+          // Does this cookie string begin with the name we want?
+          if (cookie.substring(0, name.length + 1) == (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    function csrfSafeMethod(method) {
+      // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $(document).ready(function() {
+      var csrftoken = getCookie('csrftoken');
+      $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          }
+        }
+      });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+    {% for message in messages %}
+        {{ message.tags }}
+        {{ message.message }}
+    {% endfor %}
+{% endif %}
+  <h2>분석툴 관리</h2>
+<p></p>
+<p></p>
+<p></p>
+  <div class="container show-grid">
+    <div class="col-md-6">
+      <h5>분석 툴 목록</h5>
+      <div class="row">
+
+        <ul class="list" id="leftList">
+        </ul>
+
+        <nav aria-label="...">
+          <ul id="pages" class="pagination pagination-sm">
+
+          </ul>
+        </nav>
+        <div><button onclick="new_tool()">툴입력</button></div>
+
+        <div id="goodsShowDiv">
+        <table>
+          <tr>
+            <td><label for="tool_id">Tool ID</label></td>
+            <td><input id="tool_id" maxlength="4" size="5"></td>
+            <td><label for="tool_nm">명칭</label></td>
+            <td><input id="tool_nm" maxlength="50" size="30"></td>
+          </tr>
+          <tr>
+            <td><label for="tool_method">처리함수</label></td>
+            <td colspan="3"><input id="tool_method" maxlength="50" size="45"></td>
+          </tr>
+          <tr>
+            <td><label for="img_prefix">Img Pref</label></td>
+            <td colspan="3"><input id="img_prefix" maxlength="5" size="45"></td>
+          </tr>
+          <tr>
+            <td colspan="2"><button onclick="save_tool()">저장</button></td>
+            <td colspan="2"><button onclick="delete_tool()">삭제</button></td>
+          </tr>
+        </table>
+      </div>
+
+      </div>
+    </div>
+    <div class="col-md-6">
+      {% csrf_token %}
+      <div class="row">
+        <div class="col-md-4">
+          <label>From</label> <input type="text" id="date_from" class="datePicker form-control">
+        </div>
+        <div class="col-md-4">
+          <label>To</label> <input type="text" id="date_to" class="datePicker form-control">
+        </div>
+      </div>
+      <div class="col-md-4"> <label>종목</label>
+        <select id="select2"></select>
+      </div>
+      <div>
+        <button onclick="show_tool()">툴조회</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    var totalPages = 0;
+    var selitem = "";
+    $(document).ready(function() {
+      var itemsPerPage = 20;
+      var currentPage = 1;
+
+      // Retrieve the total number of KOSPI items from the database
+      $.ajax({
+        url: "{% url 'stkadmin:total_tool_count' %}",
+        type: 'GET',
+        success: function(totalItems) {
+
+          // Display the pages links
+          totalPages = Math.ceil(totalItems.totalItems / itemsPerPage);
+          if (totalPages>itemsPerPage) {
+            set_page_link(currentPage);
+          }
+
+          // Display the first page of items in the left list
+          displayPage(currentPage);
+        }
+      });
+
+      $.ajax({
+        url: "{% url 'stkadmin:get_paged_item' %}",
+        type: 'GET',
+        data: { limit: 0, offset: 0 },
+        success: function(data) {
+
+          data.forEach(function(item) {
+            var option = $("<option value='"+item.code+"' >"+item.code + ': ' + item.company+"</option>");
+            $('#select2').append(option);
+          });
+        }
+      });
+    });
+
+    function set_page_link(curr_page) {
+      var pagesDiv = $('#pages');
+      pagesDiv.empty();
+
+      if (curr_page <= 2) {
+        start_p = 1;
+        end_p = 5;
+      } else {
+        if (curr_page + 2 > totalPages) {
+          start_p = totalPages - 4;
+          end_p = totalPages;
+        } else {
+          start_p = curr_page - 2;
+          end_p = curr_page + 2;
+        }
+      }
+
+      pagesDiv.append('<a href="#" class="page-link" onclick="goToPage(this)">맨앞</a>');
+      for (var i = start_p;i <= end_p; i++)
+      {
+        var pageLink = $('<a href="#">').addClass('page-link').text(i);
+        if (i == curr_page) {
+          pageLink.addClass('active-page');
+        }
+        pageLink.click(function() {
+          goToPage(this);
+        });
+        pagesDiv.append(pageLink);
+      }
+      pagesDiv.append('<a href="#" class="page-link" onclick="goToPage(this)">맨뒤</a>');
+    }
+
+    function goToPage(link) {
+      var pageNumber = $(link).text();
+      if (pageNumber=='맨앞') {
+        pg_no = 1;
+      } else if (pageNumber=='맨뒤') {
+        pg_no = totalPages;
+      } else {
+        pg_no = parseInt(pageNumber);
+      }
+      displayPage(pg_no);
+      set_page_link(pg_no);
+    }
+
+    function displayPage(pageNumber) {
+      var leftList = $('#leftList');
+
+      // Clear the left and right lists
+      leftList.empty();
+
+      // Retrieve the items for the specified page from the database
+      $.ajax({
+        url: "{% url 'stkadmin:get_paged_tool' %}",
+        type: 'GET',
+        data: { limit: 20, offset: (pageNumber - 1) * 20 },
+        success: function(data) {
+          // Display the items in the left list
+          data.forEach(function(item) {
+            var listItem = $('<li>').addClass('list-item').text(item.tool_id + ': ' + item.tool_nm);
+            listItem.click(function() {
+              var el = $(this).closest('li');
+              // 다른 active되어있는 li의 class를 제거
+              el.siblings('li').removeClass("active");
+              el.addClass("active");
+              selitem = $(this).text();
+
+              $('#tool_id').val(item.tool_id);
+              $('#tool_nm').val(item.tool_nm);
+              $('#tool_method').val(item.tool_method);
+              $('#img_prefix').val(item.img_prefix);
+
+            });
+            leftList.append(listItem);
+          });
+
+          // Update the active page link
+          //$('.active-page').removeClass('active-page');
+          //$('.page-link').eq(pageNumber - 1).addClass('active-page');
+        }
+      });
+    }
+
+
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
+
+    function new_tool() {
+      $('#tool_id').val("");
+      $('#tool_nm').val("");
+      $('#tool_method').val("");
+      $('#img_prefix').val("");
+    }
+
+    function save_tool() {
+      var tool_id = $('#tool_id').val();
+      var tool_nm = $('#tool_nm').val();
+      var tool_method = $('#tool_method').val();
+      var img_prefix = $('#img_prefix').val();
+
+      $.ajax({
+        url: "{% url 'stkadmin:save_tool' %}",
+        type: 'GET',
+        data: { tool_id: tool_id, tool_nm: tool_nm,  tool_method: tool_method, img_prefix: img_prefix},
+        success: function(data) {
+          alert('저장 되었습니다.')
+          displayPage(1);
+        }
+      });
+    }
+
+    function delete_tool() {
+      if (selitem=="") {
+        alert("삭제할 툴을 선택해 주세요.");
+        return false
+      }
+      if (!confirm(selitem + "를 삭제하시겠습니까? 확인(예), 취소(아니오)")) {
+        return false;
+      }
+
+      $.ajax({
+        url: "{% url 'stkadmin:delete_tool' %}",
+        type: 'GET',
+        data: { tool_id: selitem},
+        success: function(data) {
+          alert('삭제 되었습니다.')
+          displayPage(1);
+        }
+      });
+    }
+
+    function show_tool() {
+      var stdt = $('#date_from').val();
+      var eddt = $('#date_to').val();
+      var item = $('#select2').val();
+
+      if (stdt=="") {
+        alert('시작일자는 필수 입니다.');
+        return false;
+      }
+
+      if (eddt==undefined || eddt=='') {
+        eddt = '9999-12-31';
+      }
+      var sdt = new Date(stdt);
+      var edt = new Date(eddt);
+      if (sdt>edt) {
+        alert('From 날짜가 To 날짜보다 클 수 없습니다.');
+        return false;
+      }
+
+      if (selitem=="") {
+        alert("조회할 툴을 선택해 주세요.");
+        return false;
+      }
+
+       $.ajax({
+          url: "{% url 'stkadmin:show_tool' %}",
+          type: 'GET',
+          data: {tool_id: selitem, item_code: item, start_date: stdt, end_date: eddt},
+          success: function(data) {
+
+          }
+       });
+    }
+
+
+    $(function() {
+        $(".datePicker").datepicker({
+            changeMonth: true,
+            changeYear: true,
+            nextText: '다음달',
+            prevText: '이전달',
+            currentText: '오늘 날짜',
+            closeText: '닫기',
+            dateFormat: "yy-mm-dd",
+            dayNames: ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'],
+            dayNamesMin: ['월', '화', '수', '목', '금', '토', '일'],
+            monthNamesShort: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+            monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+        });
+    });
+
+  </script>
+{% endblock %}
+
+

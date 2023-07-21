@@ -1,0 +1,277 @@
+{% extends "base_stockMan.html" %}
+
+{% block style %}
+  <style>
+    .container {
+      display: flex;
+    }
+    .list {
+      width: 280px;
+      margin-right: 50px;
+    }
+    .list-item {
+      cursor: pointer;
+    }
+    .page-link {
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .active-page {
+      font-weight: bold;
+    }
+  </style>
+{% endblock %}
+
+{% block script %}
+  <script>
+   // using jQuery
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = jQuery.trim(cookies[i]);
+          // Does this cookie string begin with the name we want?
+          if (cookie.substring(0, name.length + 1) == (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    function csrfSafeMethod(method) {
+      // these HTTP methods do not require CSRF protection
+      return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $(document).ready(function() {
+      var csrftoken = getCookie('csrftoken');
+      $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          }
+        }
+      });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+    {% for message in messages %}
+        {{ message.tags }}
+        {{ message.message }}
+    {% endfor %}
+{% endif %}
+  <div class="container show-grid">
+    <div class="col-md-6">
+      <h5>KOSPI 종목</h5>
+      <div class="row">
+
+        <ul class="list" id="leftList">
+        </ul>
+
+        <nav aria-label="...">
+          <ul id="pages" class="pagination pagination-sm">
+
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <div class="col-md-6">
+      {% csrf_token %}
+      <h5>투자 종목</h5>
+      <ul class="list" id="rightList">
+      </ul>
+      <button onclick="saveitems()">저장</button>
+    </div>
+  </div>
+
+
+  <script>
+    var totalPages = 0;
+    var selitem = [];
+    $(document).ready(function() {
+      var itemsPerPage = 20;
+      var currentPage = 1;
+
+      // Retrieve the total number of KOSPI items from the database
+      $.ajax({
+        url: "{% url 'investar:total_item_count' %}",
+        type: 'GET',
+        success: function(totalItems) {
+
+          // Display the pages links
+          totalPages = Math.ceil(totalItems.totalItems / itemsPerPage);
+          set_page_link(currentPage);
+
+          // Display the first page of items in the left list
+          displayPage(currentPage);
+          // Display user invest items in the right list
+          displayinvestitems();
+        }
+      });
+    });
+
+    function displayinvestitems() {
+      var rightList = $('#rightList');
+      // Retrieve the total number of items from the database
+      $.ajax({
+        url: "{% url 'investar:retrieve_portpolio' %}",
+        type: 'GET',
+        success: function(data) {
+          // Display the items in the left list
+          data.forEach(function(item) {
+            itemtext = item.code + ': ' + item.company;
+            var listItem = $('<li>').addClass('list-item').text(itemtext);
+            listItem.click(function() {
+              for (var i=0; i<selitem.length; i ++) {
+                if (itemtext==selitem[i]) {
+                  selitem.splice(i, 1);
+                }
+              }
+              this.remove();
+            });
+            rightList.append(listItem);
+            selitem[selitem.length]=itemtext;
+          });
+        }
+      });
+    }
+
+    function set_page_link(curr_page) {
+      var pagesDiv = $('#pages');
+      pagesDiv.empty();
+
+      if (curr_page <= 2) {
+        start_p = 1;
+        end_p = 5;
+      } else {
+        if (curr_page + 2 > totalPages) {
+          start_p = totalPages - 4;
+          end_p = totalPages;
+        } else {
+          start_p = curr_page - 2;
+          end_p = curr_page + 2;
+        }
+      }
+
+      pagesDiv.append('<a href="#" class="page-link" onclick="goToPage(this)">맨앞</a>');
+      for (var i = start_p;i <= end_p; i++)
+      {
+        var pageLink = $('<a href="#">').addClass('page-link').text(i);
+        if (i == curr_page) {
+          pageLink.addClass('active-page');
+        }
+        pageLink.click(function() {
+          goToPage(this);
+        });
+        pagesDiv.append(pageLink);
+      }
+      pagesDiv.append('<a href="#" class="page-link" onclick="goToPage(this)">맨뒤</a>');
+    }
+
+    function goToPage(link) {
+      var pageNumber = $(link).text();
+      if (pageNumber=='맨앞') {
+        pg_no = 1;
+      } else if (pageNumber=='맨뒤') {
+        pg_no = totalPages;
+      } else {
+        pg_no = parseInt(pageNumber);
+      }
+      displayPage(pg_no);
+      set_page_link(pg_no);
+    }
+
+    function displayPage(pageNumber) {
+      var leftList = $('#leftList');
+      var rightList = $('#rightList');
+
+      // Clear the left and right lists
+      leftList.empty();
+      // rightList.empty();
+
+      // Retrieve the items for the specified page from the database
+      $.ajax({
+        url: "{% url 'investar:get_paged_item' %}",
+        type: 'GET',
+        data: { limit: 20, offset: (pageNumber - 1) * 20 },
+        success: function(data) {
+          // Display the items in the left list
+          data.forEach(function(item) {
+            var listItem = $('<li>').addClass('list-item').text(item.code + ': ' + item.company);
+            listItem.click(function() {
+              selectItem(this);
+            });
+            leftList.append(listItem);
+          });
+
+          // Update the active page link
+          //$('.active-page').removeClass('active-page');
+          //$('.page-link').eq(pageNumber - 1).addClass('active-page');
+        }
+      });
+    }
+
+    function selectItem(item) {
+      var text = $(item).text();
+      var rightList = $('#rightList');
+      var newListItem = $('<li>').addClass('list-item').text(text);
+      var issel = is_selected(text);
+      if (!issel) {
+        newListItem.click(function() {
+          for (var i=0; i<selitem.length; i ++) {
+            if (text==selitem[i]) {
+              selitem.splice(i, 1);
+            }
+          }
+          this.remove();
+        });
+        rightList.append(newListItem);
+        selitem[selitem.length]=text;
+      }
+    }
+
+    function is_selected(text) {
+      for (var i=0; i<selitem.length; i ++) {
+        if (text==selitem[i]) return true;
+      }
+      return false;
+    }
+
+    function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
+
+    // Save selected invest items by user
+    function saveitems() {
+      //if (selitem.length <= 0) return;
+      var Json = JSON.stringify(selitem);
+      var csrftoken = getCookie('csrftoken');
+      $.ajax({
+        url: "{% url 'investar:save_investitem' %}",
+        type: 'POST',
+        data: Json,
+        success: function(data) {
+          alert('저장이 완료되었습니다.');
+        }
+      });
+    }
+  </script>
+{% endblock %}
+
+

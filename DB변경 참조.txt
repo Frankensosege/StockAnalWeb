@@ -1,0 +1,69 @@
+CREATE TABLE IF NOT EXISTS company_info
+(
+    code character varying(20) NOT NULL,
+    company character varying(40) NOT NULL,
+    last_update date,
+    CONSTRAINT company_info_pkey PRIMARY KEY (code)
+)
+
+CREATE TABLE `daily_price` (
+  `code` varchar(20) NOT NULL,
+  `date` date NOT NULL,
+  `open` bigint DEFAULT NULL,
+  `high` bigint DEFAULT NULL,
+  `low` bigint DEFAULT NULL,
+  `close` bigint DEFAULT NULL,
+  `diff` bigint DEFAULT NULL,
+  `volume` bigint DEFAULT NULL,
+  `gov_trade` bigint DEFAULT NULL,
+  `for_trade` bigint DEFAULT NULL,
+  PRIMARY KEY (`code`,`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `invest_items` (
+  `user_id` bigint NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `company` varchar(40) NOT NULL,
+  `last_update` date DEFAULT NULL,
+  PRIMARY KEY (`user_id`, `code`),
+  UNIQUE KEY `invest_items` (`user_id`, `code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `item_fss` (
+  `code` varchar(20) NOT NULL,
+  `fss_code` varchar(3) NOT NULL,
+  `date_start` date NOT NULL,
+  `date_end` date NOT NULL,
+  `account_nm` varchar(500) NOT NULL,
+  `amount` bigint DEFAULT NULL,
+  PRIMARY KEY (`code`,`fss_code`, `date_start`, `date_end`, `account_nm`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `anal_tools` (
+  `tool_id` CHAR(4) NOT NULL,
+  `tool_nm` VARCHAR(100) NULL,
+  `tool_method` VARCHAR(100) NULL,
+  `img_prefix` VARCHAR(45) NULL,
+  PRIMARY KEY (`tool_id`),
+  UNIQUE INDEX `tool_id_UNIQUE` (`tool_id` ASC) VISIBLE);
+
+CREATE TABLE `user_tools` (
+  `tool_id` INT NOT NULL,
+  `user_id` bigint NOT NULL,
+  PRIMARY KEY (`tool_id`, `user_id`),
+  UNIQUE INDEX `tool_id_UNIQUE` (`tool_id`, `user_id` ASC) VISIBLE);
+
+
+CREATE TABLE `learning_items` (
+  `schedule_dt` date NOT NULL,
+  `item_code` varchar(20) NOT NULL,
+  `start_dt` date NOT NULL,
+  `end_dt` date NULL,
+  PRIMARY KEY (`schedule_dt`, `item_code`),
+  UNIQUE KEY `invest_items` (`schedule_dt`, `item_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+pip install mplfinance
+import psycopg2 dbl -> import MySQLdb as dbl
+pip3 install lxml
